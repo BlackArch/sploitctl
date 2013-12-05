@@ -133,7 +133,17 @@ search()
 {
     echo "[+] searching exploit"
 
-    grep -ri "${srch_str}" ${xploitdb_dir} > ${DEBUG} 2>&1
+    if [ -d "${EXPLOIT_DIR}" ]
+    then
+        if [ -d "${EXPLOIT_DIR}/exploit-db" ]
+        then
+            grep -ri "${srch_str}" ${xploitdb_dir} > ${DEBUG} 2>&1
+        else
+            err "no exploit-db directory"
+        fi
+    else
+        err "no exploit directory"
+    fi
 
     return ${SUCCESS}
 }
@@ -401,7 +411,7 @@ get_opts()
                 check_site
                 ;;
             s)
-                srchstr="${OPTARG}"
+                srch_str="${OPTARG}"
                 job="search"
                 ;;
             e)
@@ -440,9 +450,9 @@ get_opts()
 main()
 {
     banner
-    check_argc ${*}
-    get_opts ${*}
-    check_args ${*}
+    check_argc ${@}
+    get_opts ${@}
+    check_args ${@}
 
     if [ ! -d ${EXPLOIT_DIR} ]
     then
@@ -472,6 +482,6 @@ main()
 
 
 # program start
-main ${*}
+main "${@}"
 
 # EOF
