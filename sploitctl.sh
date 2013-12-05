@@ -310,8 +310,7 @@ usage()
     echo "                websites - ? to list sites"
     echo "  -s <str>    - exploit to search for using <str> pattern match"
     echo "  -e <dir>    - exploit directory (default: /var/exploits)"
-    echo "  -b <url>    - give a new base url for exploit archives of"
-    echo "                packetstorm"
+    echo "  -b <url>    - give a new base url for packetstorm"
     echo "                (default: http://packetstorm.wowhacker.com/)"
     echo "  -c          - do not delete downloaded archive files"
     echo "  -v          - verbose mode (default: off)"
@@ -441,6 +440,11 @@ main()
     check_argc ${*}
     get_opts ${*}
     check_args ${*}
+
+    if [ ! -d ${EXPLOIT_DIR} ]
+    then
+      mkdir ${EXPLOIT_DIR} > ${DEBUG} 2>&1
+    fi
 
     cd "${EXPLOIT_DIR}"
 
