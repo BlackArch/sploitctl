@@ -16,6 +16,7 @@
 # AUTHORS                                                                      #
 # noptrix@nullsecurity.net                                                     #
 # archey@riseup.net                                                            #
+# teitelmanevan@gmail.com                                                      #
 ################################################################################
 
 
@@ -154,7 +155,8 @@ extract_pstorm()
 {
     for f in *.tgz
     do
-        tar xfvz ${f} -C "${pstorm_dir}/" > ${DEBUG} 2>&1
+        tar xfvz ${f} -C "${pstorm_dir}/" > ${DEBUG} 2>&1 ||
+            err "failed to extract pstorm"
     done
  
     return ${SUCCESS}
@@ -165,8 +167,8 @@ extract_pstorm()
 extract_xploitdb()
 {
     # use bunzip because of -j vs. -y flag on $OS
-    bunzip2 archive.tar.bz2 > ${DEBUG} 2>&1
-    tar xfv archive.tar > ${DEBUG} 2>&1
+    bunzip2 archive.tar.bz2 > ${DEBUG} 2>&1 |
+        tar xv > ${DEBUG} 2>&1 || err "failed to extract xploitdb"
     
     mv platforms/* ${xploitdb_dir} > ${DEBUG} 2>&1
     mv files.csv ${xploitdb_dir} > ${DEBUG} 2>&1
@@ -250,7 +252,7 @@ fetch_pstorm()
                 > ${VERBOSE} 2>&1
             curl -A ${USERAGENT} "blackarch/sploitctl ${VERSION}" -C - -O \
                 "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
-                > ${DEBUG} 2>&1
+                > ${DEBUG} 2>&1 || err "failed to download xploitdb"
         done
         y=`expr ${y} + 1`
     done
@@ -264,7 +266,8 @@ fetch_xploitdb()
 {
     echo "  -> downloading archive from exploit-db ..." > ${VERBOSE} 2>&1
 
-    curl -A ${USERAGENT} -C - -O ${XPLOITDB_URL} > ${DEBUG} 2>&1
+     curl -A ${USERAGENT} -C - -O ${XPLOITDB_URL} > ${DEBUG} 2>&1 ||
+        err "failed to download xploitdb"
 
     return ${SUCCESS}
 }
@@ -296,12 +299,14 @@ make_exploit_dirs()
 
     if [ ! -d ${xploitdb_dir} ]
     then
-        mkdir ${xploitdb_dir} > ${DEBUG} 2>&1
+         mkdir ${xploitdb_dir} > ${DEBUG} 2>&1 ||
+            err "failed to create ${xploitdb_dir}"
     fi
 
     if [ ! -d ${pstorm_dir} ]
     then
-        mkdir ${pstorm_dir} > ${DEBUG} 2>&1
+         mkdir ${pstorm_dir} > ${DEBUG} 2>&1 ||
+            err "failed to create ${pstorm_dir}"
     fi
 
     return ${SUCCESS}
@@ -343,7 +348,7 @@ usage()
 # leet banner, very important
 banner()
 {
-    echo "--==[ sploitctl.sh by noptrix & archey ]==--"
+    echo "--==[ sploitctl.sh by noptrix & archey & para ]==--"
 
     return ${SUCCESS}
 }
@@ -456,7 +461,10 @@ main()
 
     if [ ! -d ${EXPLOIT_DIR} ]
     then
-      mkdir ${EXPLOIT_DIR} > ${DEBUG} 2>&1
+        if ! mkdir ${EXPLOIT_DIR} > ${DEBUG} 2>&1
+        then
+            err "failed to create ${EXPLOIT_DIR}"
+        fi
     fi
 
     cd "${EXPLOIT_DIR}"
