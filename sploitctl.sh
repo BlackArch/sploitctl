@@ -1,7 +1,7 @@
 #!/bin/sh
 ################################################################################
 #                                                                              #
-# sploitctl.sh - fetch and update exploit archives from exploit sites          #
+# sploitctl.sh - fetch, update, search exploits archives from exploit sites    #
 #                                                                              #
 # FILE                                                                         #
 # sploitctl.sh                                                                 #
@@ -10,8 +10,8 @@
 # 2013-12-04                                                                   #
 #                                                                              #
 # DESCRIPTION                                                                  #
-# This script fetches yearly exploit archives of well-known sites, like        #
-# exploit-db and packetstorm.                                                  #
+# This script can fetch/install, update and search exploit archives from       #
+# well-known sites like packetstormsecurity.org and exploit-db.com.            #
 #                                                                              #
 # AUTHORS                                                                      #
 # noptrix@nullsecurity.net                                                     #
@@ -47,6 +47,9 @@ PSTORM_URL="http://packetstorm.wowhacker.com/"
 
 # clean up, delete downloaded archive files (default: off)
 CLEAN=1
+
+# user agent string for curl
+USERAGENT="blackarch/${VERSION}" 
 
 
 # print line in blue
@@ -137,8 +140,8 @@ extract_pstorm()
 {
     for f in *.tgz
     do
-        gunzip ${f} > ${DEBUG} 2>&1
-        tar xfv ${f} > ${DEBUG} 2>&1
+        tar xfvz "`echo ${f} | sed 's/.tgz/.tar/g'`" -C "${pstorm_dir}/" \
+            > ${DEBUG} 2>&1
     done
  
     return ${SUCCESS}
@@ -148,11 +151,15 @@ extract_pstorm()
 # exploit exploit-db archive and do changes if necessary
 extract_xploitdb()
 {
+    # use bunzip because of -j vs. -y flag on $OS
     bunzip2 archive.tar.bz2 > ${DEBUG} 2>&1
     tar xfv archive.tar > ${DEBUG} 2>&1
+    
     mv platforms/* ${xploitdb_dir} > ${DEBUG} 2>&1
     mv files.csv ${xploitdb_dir} > ${DEBUG} 2>&1
+    
     rm -rf platforms > ${DEBUG} 2>&1
+    
     find ${xploitdb_dir} -type f -exec chmod 640 {} \; > ${DEBUG} 2>&1
  
     return ${SUCCESS}
@@ -163,6 +170,8 @@ extract_xploitdb()
 extract()
 {
     echo "[+] extracting exploit archives"
+
+    make_exploit_dirs
     
     case ${site} in
         0)
@@ -186,8 +195,14 @@ extract()
 # update exploit directory / fetch new exploit archives
 update()
 {
-    echo "[+] updating packetstorm directory"
-    echo "  -> updating ..." > ${VERBOSE} 2>&1
+    echo "[+] updating exploit collection"
+    
+    # there is currently no need for doing checks and updates
+    echo "  -> updating exploit-db ..." > ${VERBOSE} 2>&1
+    fetch_xploitdb
+    extract_xploitdb
+
+    echo "  -> updating packetstorm ..." > ${VERBOSE} 2>&1
 
     return ${SUCCESS}
 }
@@ -196,7 +211,7 @@ update()
 # download exploit archives from packetstorm
 fetch_pstorm()
 {
-    # evil but enough for the next 90 years"
+    # enough for the next 90 years ;)
     cur_year=`date +%Y | sed 's/.*20//'`
     y=0
 
@@ -209,14 +224,18 @@ fetch_pstorm()
             if [ ${y} -lt 10 ]
             then
                 year="0${y}"
-                month="0${m}"
             else
                 year="${y}"
+            fi
+            if [ ${m} -lt 10 ]
+            then
+                month="0${m}"
+            else
                 month="${m}"
             fi
             echo "  -> downloading ${year}${month}-exploits.tgz ..." \
                 > ${VERBOSE} 2>&1
-            curl -C - -O \
+            curl -A ${USERAGENT} "blackarch/sploitctl ${VERSION}" -C - -O \
                 "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
                 > ${DEBUG} 2>&1
         done
@@ -232,7 +251,7 @@ fetch_xploitdb()
 {
     echo "  -> downloading archive from exploit-db ..." > ${VERBOSE} 2>&1
 
-    curl -C - -O ${XPLOITDB_URL} > ${DEBUG} 2>&1
+    curl -A ${USERAGENT} -C - -O ${XPLOITDB_URL} > ${DEBUG} 2>&1
 
     return ${SUCCESS}
 }
@@ -242,8 +261,6 @@ fetch_xploitdb()
 fetch()
 {
     echo "[+] downloading exploit archives"
-
-    cd ${EXPLOIT_DIR}
 
     if [ "${site}" = "0" -o "${site}" = "1" ]
     then
@@ -283,7 +300,7 @@ usage()
 {
     echo "usage:"
     echo ""
-    echo "  sploitctl.sh -f <arg> | -u <arg> | [options] | <misc>"
+    echo "  sploitctl.sh -f <arg> | -u <arg> | -s <arg> [options] | <misc>"
     echo ""
     echo "options:"
     echo ""
@@ -291,6 +308,7 @@ usage()
     echo "                websites - ? to list sites"
     echo "  -u <num>    - update exploit directories from chosen"
     echo "                websites - ? to list sites"
+    echo "  -s <str>    - exploit to search for using <str> pattern match"
     echo "  -e <dir>    - exploit directory (default: /var/exploits)"
     echo "  -b <url>    - give a new base url for exploit archives of"
     echo "                packetstorm"
@@ -353,6 +371,13 @@ check_argc()
 # check if required arguments were selected
 check_args()
 {
+    echo "[+] checking arguments" > ${VERBOSE} 2>&1
+
+    if [ -z "${job}" ]
+    then
+        err "foo"
+    fi
+
     return ${SUCCESS}
 }
 
@@ -360,7 +385,7 @@ check_args()
 # parse command line options
 get_opts()
 {
-    while getopts f:u:e:b:cvdVH flags
+    while getopts f:u:s:e:b:cvdVH flags
     do
         case ${flags} in
             f)
@@ -372,6 +397,10 @@ get_opts()
                 site="${OPTARG}"
                 job="update"
                 check_site
+                ;;
+            s)
+                srchstr="${OPTARG}"
+                job="search"
                 ;;
             e)
                 EXPLOIT_DIR="${OPTARG}"
@@ -412,7 +441,8 @@ main()
     check_argc ${*}
     get_opts ${*}
     check_args ${*}
-    make_exploit_dirs
+
+    cd "${EXPLOIT_DIR}"
 
     if [ "${job}" = "fetch" ]
     then
@@ -423,6 +453,9 @@ main()
     then
         update
         clean
+    elif [ "${job}" = "search" ]
+    then
+        search
     else
         err "WTF?! mount /dev/brain"
     fi
