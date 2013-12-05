@@ -131,6 +131,10 @@ clean()
 # search exploit(s) for given search pattern
 search()
 {
+    echo "[+] searching exploit"
+
+    grep -ri "${srch_str}" ${xploitdb_dir} > ${DEBUG} 2>&1
+
     return ${SUCCESS}
 }
 
@@ -140,8 +144,7 @@ extract_pstorm()
 {
     for f in *.tgz
     do
-        tar xfvz "`echo ${f} | sed 's/.tgz/.tar/g'`" -C "${pstorm_dir}/" \
-            > ${DEBUG} 2>&1
+        tar xfvz ${f} -C "${pstorm_dir}/" > ${DEBUG} 2>&1
     done
  
     return ${SUCCESS}
@@ -374,7 +377,7 @@ check_args()
 
     if [ -z "${job}" ]
     then
-        err "foo"
+        err "choose -f, -u or -s"
     fi
 
     return ${SUCCESS}
@@ -450,7 +453,7 @@ main()
 
     if [ "${job}" = "fetch" ]
     then
-        fetch
+        #fetch
         extract
         clean
     elif [ "${job}" = "update" ]
