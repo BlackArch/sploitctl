@@ -1,7 +1,7 @@
 #!/bin/sh
 ################################################################################
 #                                                                              #
-# packetstorm.sh - get and update packetstorm exploit archives                 #
+# packetstorm.sh - fetch and update packetstorm exploit archives               #
 #                                                                              #
 # FILE                                                                         #
 # packetstorm.sh                                                               #
@@ -12,7 +12,7 @@
 # DESCRIPTION                                                                  #
 # This script fetches yearly exploit archives of packetstormsecurity.org.      #
 #                                                                              #
-# AUTHOR                                                                       #
+# AUTHORS                                                                      #
 # noptrix@nullsecurity.net                                                     #
 # archey@riseup.net                                                            #
 ################################################################################
@@ -31,6 +31,53 @@ FAILURE="31337"
 
 # verbose mode - default: quiet
 VERBOSE="/dev/null"
+
+# default directory for exploits
+PSTORMDIR="/var/packetstorm"
+
+
+# print line in blue
+blue()
+{
+    msg="${*}"
+
+    echo "`tput setaf 4`${msg}`tput sgr0`"
+
+    return ${SUCCESS}
+}
+
+
+# print line in yellow
+yellow()
+{
+    msg="${*}"
+
+    echo "`tput setaf 3`${msg}`tput sgr0`"
+
+    return ${SUCCESS}
+}
+
+
+# print line in green
+green()
+{
+    msg="${*}"
+
+    echo "`tput setaf 2`${msg}`tput sgr0`"
+
+    return ${SUCCESS}
+}
+
+
+# print line in red
+red()
+{
+    msg="${*}"
+
+    echo "`tput setaf 1`${msg}`tput sgr0`"
+
+    return ${SUCCESS}
+}
 
 
 # print warning
@@ -52,10 +99,28 @@ err()
 }
 
 
-# a routine which does foobar
-dummy()
+# un-pack given (exploit) archive
+unpack()
 {
-    echo "test for command line option '-d': ${dummy}"
+    return ${SUCCESS}
+}
+
+
+# update exploit directory / fetch new exploit archives
+update()
+{
+    echo "[+] updating exploits"
+    echo "+++ verbose mode on +++" > ${VERBOSE} 2>&1
+    exit ${SUCCESS}
+
+    return ${SUCCESS}
+}
+
+
+# fetch exploit archives
+fetch()
+{
+    echo "[+] fetching exploit archives"
     echo "+++ verbose mode on +++" > ${VERBOSE} 2>&1
     exit ${SUCCESS}
 
@@ -68,17 +133,19 @@ usage()
 {
     echo "usage:"
     echo ""
-    echo "  packetstorm.sh -d <dummy> [options] | <misc>"
+    echo "  packetstorm.sh -f | -u | [options] | <misc>"
     echo ""
     echo "options:"
     echo ""
-    echo "  -d <dummy>  - dummy for foobar"
+    echo "  -f          - fetch and un-pack exploit archives"
+    echo "  -u          - update exploit directory"
+    echo "  -d <dir>    - define exploit directory (default: /var/packetstorm)"
     echo "  -v          - verbose mode (default: off)"
     echo ""
     echo "misc:"
     echo ""
-    echo "  -V          - print version of packetstorm and exit"
-    echo "  -H          - print this help and exit"
+    echo "  -V      - print version of packetstorm and exit"
+    echo "  -H      - print this help and exit"
 
     exit ${SUCCESS}
     
@@ -89,7 +156,7 @@ usage()
 # leet banner, very important
 banner()
 {
-    echo "--==[ packetstorm.sh by noptrix and archey ]==--"
+    echo "--==[ packetstorm.sh by noptrix & archey ]==--"
 
     return ${SUCCESS}
 }
@@ -117,11 +184,17 @@ check_args()
 # parse command line options
 get_opts()
 {
-    while getopts d:vVH flags
+    while getopts fud:vVH flags
     do
         case ${flags} in
+            f)
+                job="fetch"
+                ;;
+            u)
+                job="update"
+                ;;
             d)
-                dummy="${OPTARG}"
+                PSTORMDIR="${OPTARG}"
                 ;;
             v)
                 VERBOSE="/dev/stdout"
@@ -150,7 +223,21 @@ main()
     check_argc ${*}
     get_opts ${*}
     check_args ${*}
-    dummy
+
+    red "red"
+    blue "blue"
+    yellow "yellow"
+    green "green"
+
+    if [ "${job}" = "fetch" ]
+    then
+        fetch
+    elif [ "${job}" = "update" ]
+    then
+        update
+    else
+        err "WTF?! mount /dev/brain"
+    fi
 
     return ${SUCCESS}
 }
