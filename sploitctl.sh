@@ -46,7 +46,7 @@ XPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
 # base url for packetstorm
 PSTORM_URL="http://packetstorm.wowhacker.com/"
 
-# clean up, delete downloaded archive files (default: off)
+# clean up, delete downloaded archive files (default: on)
 CLEAN=1
 
 # user agent string for curl
@@ -121,7 +121,7 @@ clean()
 {
     if [ ${CLEAN} -eq 1 ]
     then
-        echo "[+] deleting archive files" > ${VERBOSE} 2>&1
+        echo "[*] deleting archive files" > ${VERBOSE} 2>&1
         rm -rf ${EXPLOIT_DIR}/{*.tar,*.tgz,*.tar.bz2} > ${DEBUG} 2>&1
     fi
 
@@ -129,21 +129,18 @@ clean()
 }
 
 
-# search exploit(s) for given search pattern
+# search exploit(s) for given search pattern. currently exploit-db only.
 search()
 {
-    echo "[+] searching exploit"
+    echo "[*] searching exploit for '${srch_str}'"
 
     if [ -d "${EXPLOIT_DIR}" ]
     then
-        if [ -d "${EXPLOIT_DIR}/exploit-db" ]
-        then
-            grep -ri "${srch_str}" ${xploitdb_dir} > ${DEBUG} 2>&1
-        else
-            err "no exploit-db directory"
-        fi
+        grep -i "${srch_str}" "${EXPLOIT_DIR}/exploit-db/files.csv" \
+            2> /dev/null | cut -d ',' -f 2-4 | tr -s ',' ' ' |
+        sed -e "s/platforms\///g"
     else
-        err "no exploit directory"
+        err "no exploit-db directory found"
     fi
 
     return ${SUCCESS}
@@ -156,7 +153,7 @@ extract_pstorm()
     for f in *.tgz
     do
         tar xfvz ${f} -C "${pstorm_dir}/" > ${DEBUG} 2>&1 ||
-            err "failed to extract pstorm"
+            err "failed to extract packetstorm"
     done
  
     return ${SUCCESS}
@@ -167,8 +164,9 @@ extract_pstorm()
 extract_xploitdb()
 {
     # use bunzip because of -j vs. -y flag on $OS
-    bunzip2 archive.tar.bz2 > ${DEBUG} 2>&1 |
-        tar xv > ${DEBUG} 2>&1 || err "failed to extract xploitdb"
+    bunzip2 -f archive.tar.bz2 > ${DEBUG} 2>&1 ||
+        err "failed to extract exploit-db"
+    tar xfv archive.tar > ${DEBUG} 2>&1 || err "failed to extract exploit-db"
     
     mv platforms/* ${xploitdb_dir} > ${DEBUG} 2>&1
     mv files.csv ${xploitdb_dir} > ${DEBUG} 2>&1
@@ -184,10 +182,8 @@ extract_xploitdb()
 # extract exploit archives
 extract()
 {
-    echo "[+] extracting exploit archives"
+    echo "[*] extracting exploit archives"
 
-    make_exploit_dirs
-    
     case ${site} in
         0)
             extract_xploitdb
@@ -210,7 +206,7 @@ extract()
 # update exploit directory / fetch new exploit archives
 update()
 {
-    echo "[+] updating exploit collection"
+    echo "[*] updating exploit collection"
     
     # there is currently no need for doing checks and updates
     echo "  -> updating exploit-db ..." > ${VERBOSE} 2>&1
@@ -250,9 +246,9 @@ fetch_pstorm()
             fi
             echo "  -> downloading ${year}${month}-exploits.tgz ..." \
                 > ${VERBOSE} 2>&1
-            curl -A ${USERAGENT} "blackarch/sploitctl ${VERSION}" -C - -O \
+            curl -A "${USERAGENT}" -O \
                 "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
-                > ${DEBUG} 2>&1 || err "failed to download xploitdb"
+                > ${DEBUG} 2>&1 || err "failed to download packetstorm"
         done
         y=`expr ${y} + 1`
     done
@@ -265,9 +261,9 @@ fetch_pstorm()
 fetch_xploitdb()
 {
     echo "  -> downloading archive from exploit-db ..." > ${VERBOSE} 2>&1
-
-     curl -A ${USERAGENT} -C - -O ${XPLOITDB_URL} > ${DEBUG} 2>&1 ||
-        err "failed to download xploitdb"
+    
+    curl -A "${USERAGENT}" -O ${XPLOITDB_URL} > ${DEBUG} 2>&1 ||
+        err "failed to download exploit-db"
 
     return ${SUCCESS}
 }
@@ -276,7 +272,7 @@ fetch_xploitdb()
 # download exploit archives from chosen sites
 fetch()
 {
-    echo "[+] downloading exploit archives"
+    echo "[*] downloading exploit archives"
 
     if [ "${site}" = "0" -o "${site}" = "1" ]
     then
@@ -296,6 +292,14 @@ make_exploit_dirs()
 {
     xploitdb_dir="${EXPLOIT_DIR}/exploit-db"
     pstorm_dir="${EXPLOIT_DIR}/packetstorm"
+    
+    if [ ! -d ${EXPLOIT_DIR} ]
+    then
+        if ! mkdir ${EXPLOIT_DIR} > ${DEBUG} 2>&1
+        then
+            err "failed to create ${EXPLOIT_DIR}"
+        fi
+    fi
 
     if [ ! -d ${xploitdb_dir} ]
     then
@@ -308,6 +312,8 @@ make_exploit_dirs()
          mkdir ${pstorm_dir} > ${DEBUG} 2>&1 ||
             err "failed to create ${pstorm_dir}"
     fi
+
+    cd "${EXPLOIT_DIR}"
 
     return ${SUCCESS}
 }
@@ -348,7 +354,7 @@ usage()
 # leet banner, very important
 banner()
 {
-    echo "--==[ sploitctl.sh by noptrix & archey & para ]==--"
+    echo "--==[ sploitctl.sh by blackarch.org ]==--"
 
     return ${SUCCESS}
 }
@@ -359,7 +365,7 @@ check_site()
 {
     if [ "${site}" = "?" ]
     then
-        echo "[+] available exploit sites"
+        echo "[*] available exploit sites"
         echo "  -> 0 - all exploit sites"
         echo "  -> 1 - exploit-db.com"
         echo "  -> 2 - packetstormsecurity.org"
@@ -388,7 +394,7 @@ check_argc()
 # check if required arguments were selected
 check_args()
 {
-    echo "[+] checking arguments" > ${VERBOSE} 2>&1
+    echo "[*] checking arguments" > ${VERBOSE} 2>&1
 
     if [ -z "${job}" ]
     then
@@ -455,27 +461,19 @@ get_opts()
 main()
 {
     banner
-    check_argc ${@}
-    get_opts ${@}
-    check_args ${@}
-
-    if [ ! -d ${EXPLOIT_DIR} ]
-    then
-        if ! mkdir ${EXPLOIT_DIR} > ${DEBUG} 2>&1
-        then
-            err "failed to create ${EXPLOIT_DIR}"
-        fi
-    fi
-
-    cd "${EXPLOIT_DIR}"
+    check_argc "${@}"
+    get_opts "${@}"
+    check_args "${@}"
 
     if [ "${job}" = "fetch" ]
     then
-        #fetch
+        make_exploit_dirs
+        fetch
         extract
         clean
     elif [ "${job}" = "update" ]
     then
+        make_exploit_dirs
         update
         clean
     elif [ "${job}" = "search" ]
@@ -484,6 +482,8 @@ main()
     else
         err "WTF?! mount /dev/brain"
     fi
+
+    echo "[*] game over"
 
     return ${SUCCESS}
 }
