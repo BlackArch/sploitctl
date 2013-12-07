@@ -27,7 +27,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v0.3"
+VERSION="sploitctl.sh v0.4"
 
 # true / false
 FALSE="0"
@@ -405,7 +405,7 @@ usage()
     echo "  -b <url>    - give a new base url for packetstorm"
     echo "                (default: http://dl.packetstormsecurity.com/)"
     echo "  -l <file>   - give a new base path/file for website list option"
-    echo "                (default: /usr/share/sploitctl/url.lst"
+    echo "                (default: /usr/share/sploitctl/web/url.lst"
     echo "  -c          - do not delete downloaded archive files"
     echo "  -n          - turn off colors"
     echo "  -v          - verbose mode (default: off)"
