@@ -17,6 +17,13 @@
 # noptrix@nullsecurity.net                                                     #
 # archey@riseup.net                                                            #
 # teitelmanevan@gmail.com                                                      #
+#                                                                              #
+# TODO                                                                         #
+# - fix english (description, help output, comments)                           #
+# - colorize output                                                            #
+# - add progress bar for downloading and extracting exploits                   #
+# - implement update() for packetstorm exploits                                #
+# - implement checksum for archives (only download if tarball changed)         #
 ################################################################################
 
 
@@ -44,7 +51,7 @@ EXPLOIT_DIR="/var/exploits"
 XPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
 
 # base url for packetstorm
-PSTORM_URL="http://packetstorm.wowhacker.com/"
+PSTORM_URL="http://dl.packetstormsecurity.com/"
 
 # clean up, delete downloaded archive files (default: on)
 CLEAN=1
@@ -136,9 +143,13 @@ search()
 
     if [ -d "${EXPLOIT_DIR}" ]
     then
+        echo "  -> searching in exploit-db" > ${VERBOSE} 2>&1
         grep -i "${srch_str}" "${EXPLOIT_DIR}/exploit-db/files.csv" \
             2> /dev/null | cut -d ',' -f 2-4 | tr -s ',' ' ' |
-        sed -e "s/platforms\///g"
+        sed -e "s/platforms/\/exploit-db/g"
+        echo "  -> searching in packetstorm" > ${VERBOSE} 2>&1
+        grep -ri --exclude='*htm*' "${srch_str}" "${EXPLOIT_DIR}/packetstorm/" \
+            2> /dev/null | grep "/packetstorm" | cut -d '/' -f 3-
     else
         err "no exploit-db directory found"
     fi
@@ -147,26 +158,27 @@ search()
 }
 
 
-# exploit packetstorm archives and do changes if necessary
+# extract packetstorm archives and do changes if necessary
 extract_pstorm()
 {
     for f in *.tgz
     do
+        echo "  -> extracting ${f} ..." > ${VERBOSE} 2>&1
         tar xfvz ${f} -C "${pstorm_dir}/" > ${DEBUG} 2>&1 ||
-            err "failed to extract packetstorm"
+            warn "failed to extract packetstorm ${f}"
     done
  
     return ${SUCCESS}
 }
 
 
-# exploit exploit-db archive and do changes if necessary
+# extract exploit-db archive and do changes if necessary
 extract_xploitdb()
 {
     # use bunzip because of -j vs. -y flag on $OS
     bunzip2 -f archive.tar.bz2 > ${DEBUG} 2>&1 ||
         err "failed to extract exploit-db"
-    tar xfv archive.tar > ${DEBUG} 2>&1 || err "failed to extract exploit-db"
+    tar xfv archive.tar > ${DEBUG} 2>&1 || warn "failed to extract exploit-db"
     
     mv platforms/* ${xploitdb_dir} > ${DEBUG} 2>&1
     mv files.csv ${xploitdb_dir} > ${DEBUG} 2>&1
@@ -335,7 +347,7 @@ usage()
     echo "  -s <str>    - exploit to search for using <str> pattern match"
     echo "  -e <dir>    - exploit directory (default: /var/exploits)"
     echo "  -b <url>    - give a new base url for packetstorm"
-    echo "                (default: http://packetstorm.wowhacker.com/)"
+    echo "                (default: http://dl.packetstormsecurity.com/)"
     echo "  -c          - do not delete downloaded archive files"
     echo "  -v          - verbose mode (default: off)"
     echo "  -d          - debug mode (default: off)"
