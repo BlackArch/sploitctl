@@ -27,7 +27,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v0.2"
+VERSION="sploitctl.sh v0.3"
 
 # true / false
 FALSE="0"
@@ -162,12 +162,14 @@ search_db()
 }
 
 # open browser for the search
-open_browser(){
-    url=${1}
-    name=${2}
-
-    domain=$(printf "%s" "${url}" |sed 's|\(http://[^/]*/\).*|\1|g')
-    blue "  -> Opening '${domain}' in ${BROWSER}"
+open_browser()
+{
+    url="${1}"
+    name="${2}"
+    
+    domain=`printf "%s" "${url}" | sed 's|\(http://[^/]*/\).*|\1|g'`
+    
+    green "  -> opening '${domain}' in ${BROWSER}" > ${VERBOSE} 2>&1
     "${BROWSER}" "${url}${name}"
 
     return "${SUCCESS}"
@@ -178,9 +180,10 @@ search_web()
 {
     name=${srch_str}
 
-    green "Search '${name}'"
+    blue "[*] searching '${name}'"
     
-    while read -r; do 
+    while read -r;
+    do
         open_browser "${REPLY}" "${name}"
     done < "${URL_FILE}" 
 
