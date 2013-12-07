@@ -58,7 +58,7 @@ blue()
 {
     msg="${*}"
 
-    echo "`tput setaf 4`${msg}`tput sgr0`"
+    echo "`tput setaf 4``tput bold`${msg}`tput sgr0`"
 
     return ${SUCCESS}
 }
@@ -69,7 +69,7 @@ yellow()
 {
     msg="${*}"
 
-    echo "`tput setaf 3`${msg}`tput sgr0`"
+    echo "`tput setaf 3``tput bold`${msg}`tput sgr0`"
 
     return ${SUCCESS}
 }
@@ -80,7 +80,7 @@ green()
 {
     msg="${*}"
 
-    echo "`tput setaf 2`${msg}`tput sgr0`"
+    echo "`tput setaf 2``tput bold`${msg}`tput sgr0`"
 
     return ${SUCCESS}
 }
@@ -91,7 +91,7 @@ red()
 {
     msg="${*}"
 
-    echo "`tput setaf 1`${msg}`tput sgr0`"
+    echo "`tput setaf 1``tput bold`${msg}`tput sgr0`"
 
     return ${SUCCESS}
 }
@@ -100,7 +100,7 @@ red()
 # print warning
 warn()
 {
-    echo "[!] WARNING: ${*}"
+    red "[!] WARNING: ${*}"
 
     return ${SUCCESS}
 }
@@ -109,7 +109,7 @@ warn()
 # print error and exit
 err()
 {
-    echo "[-] ERROR: ${*}"
+    red "[-] ERROR: ${*}"
     exit ${FAILURE}
 
     return ${SUCCESS}
@@ -121,7 +121,7 @@ clean()
 {
     if [ ${CLEAN} -eq 1 ]
     then
-        echo "[*] deleting archive files" > ${VERBOSE} 2>&1
+        red "[*] deleting archive files" > ${VERBOSE} 2>&1
         rm -rf ${EXPLOIT_DIR}/{*.tar,*.tgz,*.tar.bz2} > ${DEBUG} 2>&1
     fi
 
@@ -132,7 +132,7 @@ clean()
 # search exploit(s) for given search pattern. currently exploit-db only.
 search()
 {
-    echo "[*] searching exploit for '${srch_str}'"
+    blue "[*] searching exploit for '${srch_str}'"
 
     if [ -d "${EXPLOIT_DIR}" ]
     then
@@ -182,7 +182,7 @@ extract_xploitdb()
 # extract exploit archives
 extract()
 {
-    echo "[*] extracting exploit archives"
+    blue "[*] extracting exploit archives"
 
     case ${site} in
         0)
@@ -190,11 +190,11 @@ extract()
             extract_pstorm
             ;;
         1)
-            echo "  -> extracting exploit-db archives ..." > ${VERBOSE} 2>&1
+            blue "  -> extracting exploit-db archives ..." > ${VERBOSE} 2>&1
             extract_xploitdb
             ;;
         2)
-            echo "  -> extracting packetstorm archives ..." > ${VERBOSE} 2>&1
+            blue "  -> extracting packetstorm archives ..." > ${VERBOSE} 2>&1
             extract_pstorm
             ;;
     esac
@@ -206,14 +206,14 @@ extract()
 # update exploit directory / fetch new exploit archives
 update()
 {
-    echo "[*] updating exploit collection"
+    blue "[*] updating exploit collection"
     
     # there is currently no need for doing checks and updates
-    echo "  -> updating exploit-db ..." > ${VERBOSE} 2>&1
+    blue "  -> updating exploit-db ..." > ${VERBOSE} 2>&1
     fetch_xploitdb
     extract_xploitdb
 
-    echo "  -> updating packetstorm ..." > ${VERBOSE} 2>&1
+    blue "  -> updating packetstorm ..." > ${VERBOSE} 2>&1
 
     return ${SUCCESS}
 }
@@ -226,7 +226,7 @@ fetch_pstorm()
     cur_year=`date +%Y | sed 's/.*20//'`
     y=0
 
-    echo "  -> downloading archives from packetstorm ..." > ${VERBOSE} 2>&1
+    green "  -> downloading archives from packetstorm ..." > ${VERBOSE} 2>&1
 
     while [ ${y} -le ${cur_year} ]
     do
@@ -244,9 +244,9 @@ fetch_pstorm()
             else
                 month="${m}"
             fi
-            echo "  -> downloading ${year}${month}-exploits.tgz ..." \
+            green "  -> downloading ${year}${month}-exploits.tgz ..." \
                 > ${VERBOSE} 2>&1
-            curl -A "${USERAGENT}" -O \
+            curl -# -A "${USERAGENT}" -O \
                 "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
                 > ${DEBUG} 2>&1 || err "failed to download packetstorm"
         done
@@ -260,9 +260,9 @@ fetch_pstorm()
 # download exploit archives from exploit-db
 fetch_xploitdb()
 {
-    echo "  -> downloading archive from exploit-db ..." > ${VERBOSE} 2>&1
+    green "  -> downloading archive from exploit-db ..." > ${VERBOSE} 2>&1
     
-    curl -A "${USERAGENT}" -O ${XPLOITDB_URL} > ${DEBUG} 2>&1 ||
+    curl -# -A "${USERAGENT}" -O ${XPLOITDB_URL}  > ${DEBUG} 2>&1 ||
         err "failed to download exploit-db"
 
     return ${SUCCESS}
@@ -272,7 +272,7 @@ fetch_xploitdb()
 # download exploit archives from chosen sites
 fetch()
 {
-    echo "[*] downloading exploit archives"
+    blue "[*] downloading exploit archives"
 
     if [ "${site}" = "0" -o "${site}" = "1" ]
     then
@@ -354,7 +354,7 @@ usage()
 # leet banner, very important
 banner()
 {
-    echo "--==[ sploitctl.sh by blackarch.org ]==--"
+    yellow "--==[ sploitctl.sh by blackarch.org ]==--"
 
     return ${SUCCESS}
 }
@@ -365,10 +365,10 @@ check_site()
 {
     if [ "${site}" = "?" ]
     then
-        echo "[*] available exploit sites"
-        echo "  -> 0 - all exploit sites"
-        echo "  -> 1 - exploit-db.com"
-        echo "  -> 2 - packetstormsecurity.org"
+        blue "[*] available exploit sites"
+        green "  -> 0 - all exploit sites"
+        green "  -> 1 - exploit-db.com"
+        green "  -> 2 - packetstormsecurity.org"
         exit ${SUCCESS}
     elif [ "${site}" != "0" -a "${site}" != "1" -a "${site}" != "2" ]
     then
@@ -394,7 +394,7 @@ check_argc()
 # check if required arguments were selected
 check_args()
 {
-    echo "[*] checking arguments" > ${VERBOSE} 2>&1
+    yellow "[*] checking arguments" > ${VERBOSE} 2>&1
 
     if [ -z "${job}" ]
     then
