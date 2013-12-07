@@ -1,7 +1,7 @@
 #!/bin/sh
 ################################################################################
 #                                                                              #
-# sploitctl.sh - fetch, update, search exploits archives from exploit sites    #
+# sploitctl.sh - fetch, install and search exploit archives from exploit sites #
 #                                                                              #
 # FILE                                                                         #
 # sploitctl.sh                                                                 #
@@ -19,8 +19,6 @@
 # teitelmanevan@gmail.com                                                      #
 #                                                                              #
 # TODO                                                                         #
-# - fix english (description, help output, comments)                           #
-# - colorize output                                                            #
 # - add progress bar for downloading and extracting exploits                   #
 # - implement update() for packetstorm exploits                                #
 # - implement checksum for archives (only download if tarball changed)         #
@@ -128,7 +126,7 @@ clean()
 {
     if [ ${CLEAN} -eq 1 ]
     then
-        red "[*] deleting archive files" > ${VERBOSE} 2>&1
+        blue "[*] deleting archive files" > ${VERBOSE} 2>&1
         rm -rf ${EXPLOIT_DIR}/{*.tar,*.tgz,*.tar.bz2} > ${DEBUG} 2>&1
     fi
 
@@ -143,11 +141,11 @@ search()
 
     if [ -d "${EXPLOIT_DIR}" ]
     then
-        echo "  -> searching in exploit-db" > ${VERBOSE} 2>&1
+        green "  -> searching in exploit-db" > ${VERBOSE} 2>&1
         grep -i "${srch_str}" "${EXPLOIT_DIR}/exploit-db/files.csv" \
             2> /dev/null | cut -d ',' -f 2-4 | tr -s ',' ' ' |
         sed -e "s/platforms/\/exploit-db/g"
-        echo "  -> searching in packetstorm" > ${VERBOSE} 2>&1
+        green "  -> searching in packetstorm" > ${VERBOSE} 2>&1
         grep -ri --exclude='*htm*' "${srch_str}" "${EXPLOIT_DIR}/packetstorm/" \
             2> /dev/null | grep "/packetstorm" | cut -d '/' -f 3-
     else
@@ -163,7 +161,7 @@ extract_pstorm()
 {
     for f in *.tgz
     do
-        echo "  -> extracting ${f} ..." > ${VERBOSE} 2>&1
+        green "  -> extracting ${f} ..." > ${VERBOSE} 2>&1
         tar xfvz ${f} -C "${pstorm_dir}/" > ${DEBUG} 2>&1 ||
             warn "failed to extract packetstorm ${f}"
     done
@@ -202,11 +200,11 @@ extract()
             extract_pstorm
             ;;
         1)
-            blue "  -> extracting exploit-db archives ..." > ${VERBOSE} 2>&1
+            green "  -> extracting exploit-db archives ..." > ${VERBOSE} 2>&1
             extract_xploitdb
             ;;
         2)
-            blue "  -> extracting packetstorm archives ..." > ${VERBOSE} 2>&1
+            green "  -> extracting packetstorm archives ..." > ${VERBOSE} 2>&1
             extract_pstorm
             ;;
     esac
@@ -221,11 +219,11 @@ update()
     blue "[*] updating exploit collection"
     
     # there is currently no need for doing checks and updates
-    blue "  -> updating exploit-db ..." > ${VERBOSE} 2>&1
+    green "  -> updating exploit-db ..." > ${VERBOSE} 2>&1
     fetch_xploitdb
     extract_xploitdb
 
-    blue "  -> updating packetstorm ..." > ${VERBOSE} 2>&1
+    green "  -> updating packetstorm ..." > ${VERBOSE} 2>&1
 
     return ${SUCCESS}
 }
@@ -406,7 +404,7 @@ check_argc()
 # check if required arguments were selected
 check_args()
 {
-    yellow "[*] checking arguments" > ${VERBOSE} 2>&1
+    blue "[*] checking arguments" > ${VERBOSE} 2>&1
 
     if [ -z "${job}" ]
     then
@@ -495,7 +493,7 @@ main()
         err "WTF?! mount /dev/brain"
     fi
 
-    echo "[*] game over"
+    blue "[*] game over"
 
     return ${SUCCESS}
 }
