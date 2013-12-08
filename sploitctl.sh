@@ -64,12 +64,20 @@ BROWSER="firefox"
 # default url list for web option
 URL_FILE="/usr/share/sploitctl/web/url.lst"
 
+# use colors
+COLORS=1
+
 # print line in blue
 blue()
 {
     msg="${*}"
 
-    echo "`tput setaf 4``tput bold`${msg}`tput sgr0`"
+    if [ ${COLORS} -eq 1 ]
+	then
+		echo "`tput setaf 4``tput bold`${msg}`tput sgr0`"
+	else
+		echo "${msg}"
+	fi
 
     return ${SUCCESS}
 }
@@ -80,7 +88,12 @@ yellow()
 {
     msg="${*}"
 
-    echo "`tput setaf 3``tput bold`${msg}`tput sgr0`"
+    if [ ${COLORS} -eq 1 ]
+	then
+		echo "`tput setaf 3``tput bold`${msg}`tput sgr0`"
+	else
+		echo "${msg}"
+	fi
 
     return ${SUCCESS}
 }
@@ -91,7 +104,12 @@ green()
 {
     msg="${*}"
 
-    echo "`tput setaf 2``tput bold`${msg}`tput sgr0`"
+    if [ ${COLORS} -eq 1 ]
+	then
+		echo "`tput setaf 2``tput bold`${msg}`tput sgr0`"
+	else
+		echo "${msg}"
+	fi
 
     return ${SUCCESS}
 }
@@ -102,7 +120,12 @@ red()
 {
     msg="${*}"
 
-    echo "`tput setaf 1``tput bold`${msg}`tput sgr0`"
+    if [ ${COLORS} -eq 1 ]
+	then
+		echo "`tput setaf 1``tput bold`${msg}`tput sgr0`"
+	else
+		echo "${msg}"
+	fi
 
     return ${SUCCESS}
 }
@@ -381,6 +404,7 @@ usage()
     echo "  -l <file>   - give a new base path/file for website list option"
     echo "                (default: /usr/share/sploitctl/url.lst"
     echo "  -c          - do not delete downloaded archive files"
+    echo "  -n          - turn off colors"
     echo "  -v          - verbose mode (default: off)"
     echo "  -d          - debug mode (default: off)"
     echo ""
@@ -456,7 +480,7 @@ check_args()
 # parse command line options
 get_opts()
 {
-    while getopts f:u:s:w:e:b:l:cvdVH flags
+    while getopts f:u:s:w:e:b:l:cnvdVH flags
     do
         case ${flags} in
             f)
@@ -489,6 +513,9 @@ get_opts()
             c)
                 CLEAN=0
                 ;;
+			n)
+				COLORS=0
+				;;
             v)
                 VERBOSE="/dev/stdout"
                 ;;
@@ -515,9 +542,9 @@ get_opts()
 # controller and program flow
 main()
 {
-    banner
     check_argc "${@}"
     get_opts "${@}"
+    banner
     check_args "${@}"
 
     if [ "${job}" = "fetch" ]
