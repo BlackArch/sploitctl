@@ -27,7 +27,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v0.4"
+VERSION="sploitctl.sh v0.5"
 
 # true / false
 FALSE="0"
@@ -230,7 +230,8 @@ extract_pstorm()
 # extract exploit-db archive and do changes if necessary
 extract_xploitdb()
 {
-    # use bunzip because of -j vs. -y flag on $OS
+    green "  -> extracting archive.tar.bz2 ..." > ${VERBOSE} 2>&1
+    
     bunzip2 -f archive.tar.bz2 > ${DEBUG} 2>&1 ||
         err "failed to extract exploit-db"
     tar xfv archive.tar > ${DEBUG} 2>&1 || warn "failed to extract exploit-db"
