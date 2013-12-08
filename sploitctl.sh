@@ -73,11 +73,11 @@ blue()
     msg="${*}"
 
     if [ ${COLORS} -eq 1 ]
-	then
-		echo "`tput setaf 4``tput bold`${msg}`tput sgr0`"
-	else
-		echo "${msg}"
-	fi
+    then
+        echo "`tput setaf 4``tput bold`${msg}`tput sgr0`"
+    else
+        echo "${msg}"
+    fi
 
     return ${SUCCESS}
 }
@@ -89,11 +89,11 @@ yellow()
     msg="${*}"
 
     if [ ${COLORS} -eq 1 ]
-	then
-		echo "`tput setaf 3``tput bold`${msg}`tput sgr0`"
-	else
-		echo "${msg}"
-	fi
+    then
+        echo "`tput setaf 3``tput bold`${msg}`tput sgr0`"
+    else
+        echo "${msg}"
+    fi
 
     return ${SUCCESS}
 }
@@ -105,11 +105,11 @@ green()
     msg="${*}"
 
     if [ ${COLORS} -eq 1 ]
-	then
-		echo "`tput setaf 2``tput bold`${msg}`tput sgr0`"
-	else
-		echo "${msg}"
-	fi
+    then
+        echo "`tput setaf 2``tput bold`${msg}`tput sgr0`"
+    else
+        echo "${msg}"
+    fi
 
     return ${SUCCESS}
 }
@@ -121,11 +121,11 @@ red()
     msg="${*}"
 
     if [ ${COLORS} -eq 1 ]
-	then
-		echo "`tput setaf 1``tput bold`${msg}`tput sgr0`"
-	else
-		echo "${msg}"
-	fi
+    then
+        echo "`tput setaf 1``tput bold`${msg}`tput sgr0`"
+    else
+        echo "${msg}"
+    fi
 
     return ${SUCCESS}
 }
@@ -516,9 +516,9 @@ get_opts()
             c)
                 CLEAN=0
                 ;;
-			n)
-				COLORS=0
-				;;
+            n)
+                COLORS=0
+                ;;
             v)
                 VERBOSE="/dev/stdout"
                 ;;
