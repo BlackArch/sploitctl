@@ -17,6 +17,7 @@
 # noptrix@nullsecurity.net                                                     #
 # archey@riseup.net                                                            #
 # teitelmanevan@gmail.com                                                      #
+# nrz@nullsecurity.net                                                         #
 #                                                                              #
 # TODO                                                                         #
 # - add progress bar for downloading and extracting exploits                   #
@@ -57,6 +58,11 @@ CLEAN=1
 # user agent string for curl
 USERAGENT="blackarch/${VERSION}" 
 
+# browser open url in web search option
+BROWSER="firefox"
+
+# default url list for web option
+URL_FILE="/usr/share/sploitctl/web/url.lst"
 
 # print line in blue
 blue()
@@ -135,7 +141,7 @@ clean()
 
 
 # search exploit(s) for given search pattern. currently exploit-db only.
-search()
+search_db()
 {
     blue "[*] searching exploit for '${srch_str}'"
 
@@ -155,6 +161,31 @@ search()
     return ${SUCCESS}
 }
 
+# open browser for the search
+open_browser(){
+    url=${1}
+    name=${2}
+
+    domain=$(printf "%s" "${url}" |sed 's|\(http://[^/]*/\).*|\1|g')
+    blue "  -> Opening '${domain}' in ${BROWSER}"
+    "${BROWSER}" "${url}${name}"
+
+    return "${SUCCESS}"
+}
+
+# search exploit(s) for given search pattern in web sites
+search_web()
+{
+    name=${srch_str}
+
+    green "Search '${name}'"
+    
+    while read -r; do 
+        open_browser "${REPLY}" "${name}"
+    done < "${URL_FILE}" 
+
+    return "${SUCCESS}"
+} 
 
 # extract packetstorm archives and do changes if necessary
 extract_pstorm()
@@ -343,9 +374,12 @@ usage()
     echo "  -u <num>    - update exploit directories from chosen"
     echo "                websites - ? to list sites"
     echo "  -s <str>    - exploit to search for using <str> pattern match"
+    echo "  -w <str>    - exploit to search in web exploit site"
     echo "  -e <dir>    - exploit directory (default: /var/exploits)"
     echo "  -b <url>    - give a new base url for packetstorm"
     echo "                (default: http://dl.packetstormsecurity.com/)"
+    echo "  -l <file>   - give a new base path/file for website list option"
+    echo "                (default: /usr/share/sploitctl/url.lst"
     echo "  -c          - do not delete downloaded archive files"
     echo "  -v          - verbose mode (default: off)"
     echo "  -d          - debug mode (default: off)"
@@ -411,6 +445,10 @@ check_args()
         err "choose -f, -u or -s"
     fi
 
+    if [ "${job}" = "search_web" ] && [ ! -f "${URL_FILE}" ]
+    then
+        err "failed to get url file for web searching - try -l <file>"
+    fi 
     return ${SUCCESS}
 }
 
@@ -418,7 +456,7 @@ check_args()
 # parse command line options
 get_opts()
 {
-    while getopts f:u:s:e:b:cvdVH flags
+    while getopts f:u:s:w:e:b:l:cvdVH flags
     do
         case ${flags} in
             f)
@@ -433,13 +471,20 @@ get_opts()
                 ;;
             s)
                 srch_str="${OPTARG}"
-                job="search"
+                job="search_db"
+                ;;
+            w)
+                srch_str="${OPTARG}"
+                job="search_web"
                 ;;
             e)
                 EXPLOIT_DIR="${OPTARG}"
                 ;;
             b)
                 PSTORM_URL="${OPTARG}"
+                ;;
+            l)
+                URL_FILE="${OPTARG}"
                 ;;
             c)
                 CLEAN=0
@@ -486,9 +531,12 @@ main()
         make_exploit_dirs
         update
         clean
-    elif [ "${job}" = "search" ]
+    elif [ "${job}" = "search_db" ]
     then
-        search
+        search_db
+    elif [ "${job}" = "search_web" ]
+    then
+        search_web
     else
         err "WTF?! mount /dev/brain"
     fi
