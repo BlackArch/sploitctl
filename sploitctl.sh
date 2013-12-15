@@ -21,13 +21,13 @@
 #                                                                              #
 # TODO                                                                         #
 # - add progress bar for downloading and extracting exploits                   #
-# - implement update() for packetstorm exploits                                #
+# - implement update() routine (makes sense only for packetstorm)              #
 # - implement checksum for archives (only download if tarball changed)         #
 ################################################################################
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v0.5"
+VERSION="sploitctl.sh v0.6"
 
 # true / false
 FALSE="0"
@@ -271,22 +271,6 @@ extract()
 }
 
 
-# update exploit directory / fetch new exploit archives
-update()
-{
-    blue "[*] updating exploit collection"
-    
-    # there is currently no need for doing checks and updates
-    green "  -> updating exploit-db ..." > ${VERBOSE} 2>&1
-    fetch_xploitdb
-    extract_xploitdb
-
-    green "  -> updating packetstorm ..." > ${VERBOSE} 2>&1
-
-    return ${SUCCESS}
-}
-
-
 # download exploit archives from packetstorm
 fetch_pstorm()
 {
@@ -392,13 +376,11 @@ usage()
 {
     echo "usage:"
     echo ""
-    echo "  sploitctl.sh -f <arg> | -u <arg> | -s <arg> [options] | <misc>"
+    echo "  sploitctl.sh -f <arg> | -s <arg> [options] | <misc>"
     echo ""
     echo "options:"
     echo ""
     echo "  -f <num>    - download and extract exploit archives from chosen"
-    echo "                websites - ? to list sites"
-    echo "  -u <num>    - update exploit directories from chosen"
     echo "                websites - ? to list sites"
     echo "  -s <str>    - exploit to search for using <str> pattern match"
     echo "  -w <str>    - exploit to search in web exploit site"
@@ -406,7 +388,7 @@ usage()
     echo "  -b <url>    - give a new base url for packetstorm"
     echo "                (default: http://dl.packetstormsecurity.com/)"
     echo "  -l <file>   - give a new base path/file for website list option"
-    echo "                (default: /usr/share/sploitctl/web/url.lst"
+    echo "                (default: /usr/share/sploitctl/web/url.lst)"
     echo "  -c          - do not delete downloaded archive files"
     echo "  -n          - turn off colors"
     echo "  -v          - verbose mode (default: off)"
@@ -484,17 +466,12 @@ check_args()
 # parse command line options
 get_opts()
 {
-    while getopts f:u:s:w:e:b:l:cnvdVH flags
+    while getopts f:s:w:e:b:l:cnvdVH flags
     do
         case ${flags} in
             f)
                 site="${OPTARG}"
                 job="fetch"
-                check_site
-                ;;
-            u)
-                site="${OPTARG}"
-                job="update"
                 check_site
                 ;;
             s)
@@ -556,11 +533,6 @@ main()
         make_exploit_dirs
         fetch
         extract
-        clean
-    elif [ "${job}" = "update" ]
-    then
-        make_exploit_dirs
-        update
         clean
     elif [ "${job}" = "search_db" ]
     then
