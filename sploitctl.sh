@@ -27,7 +27,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v0.7"
+VERSION="sploitctl.sh v0.8"
 
 # true / false
 FALSE="0"
@@ -159,7 +159,7 @@ clean()
     if [ ${CLEAN} -eq 1 ]
     then
         blue "[*] deleting archive files" > ${VERBOSE} 2>&1
-        rm -rf ${EXPLOIT_DIR}/{*.tar,*.tgz,*.tar.bz2} > ${DEBUG} 2>&1
+        rm -rf ${EXPLOIT_DIR}/{*.tar,*.tgz,*.tar.gz,*.tar.bz2} > ${DEBUG} 2>&1
     fi
 
     return ${SUCCESS}
@@ -470,7 +470,7 @@ check_site()
         green "  -> 0 - all exploit sites"
         green "  -> 1 - exploit-db.com"
         green "  -> 2 - packetstormsecurity.org"
-        green "  -> 3 - m00 exploits (github)"
+        green "  -> 3 - m00-exploits (github)"
         exit ${SUCCESS}
     elif [ "${site}" != "0" -a "${site}" != "1" -a "${site}" != "2" \
       -a "${site}" != "3" ]
