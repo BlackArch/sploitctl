@@ -27,7 +27,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v0.6"
+VERSION="sploitctl.sh v0.7"
 
 # true / false
 FALSE="0"
@@ -51,6 +51,9 @@ XPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
 
 # base url for packetstorm
 PSTORM_URL="http://dl.packetstormsecurity.com/"
+
+# link to m00 exploits archive
+M00_URL="https://github.com/BlackArch/m00-exploits/raw/master/m00-exploits.tar.gz"
 
 # clean up, delete downloaded archive files (default: on)
 CLEAN=1
@@ -174,9 +177,13 @@ search_db()
         grep -i "${srch_str}" "${EXPLOIT_DIR}/exploit-db/files.csv" \
             2> /dev/null | cut -d ',' -f 2-4 | tr -s ',' ' ' |
         sed -e "s/platforms/\/exploit-db/g"
+        
         green "  -> searching in packetstorm" > ${VERBOSE} 2>&1
         grep -ri --exclude='*htm*' "${srch_str}" "${EXPLOIT_DIR}/packetstorm/" \
             2> /dev/null | grep "/packetstorm" | cut -d '/' -f 3-
+        
+        green "  -> searching in m00-exploits" > ${VERBOSE} 2>&1
+        grep -ir "${srch_str}" "${EXPLOIT_DIR}/m00-exploits" 2> /dev/null
     else
         err "no exploit-db directory found"
     fi
@@ -212,6 +219,18 @@ search_web()
 
     return "${SUCCESS}"
 } 
+
+
+# extract m00-exploits archives and do changes if necessary
+extract_m00()
+{
+    green "  -> extracting m00-exploits.tar.gz ..." > ${VERBOSE} 2>&1
+    tar xfvz m00-exploits.tar.gz > ${DEBUG} 2>&1 ||
+      warn "failed to extract m00-exploits ${f}"
+ 
+    return ${SUCCESS}
+}
+
 
 # extract packetstorm archives and do changes if necessary
 extract_pstorm()
@@ -256,6 +275,7 @@ extract()
         0)
             extract_xploitdb
             extract_pstorm
+            extract_m00
             ;;
         1)
             green "  -> extracting exploit-db archives ..." > ${VERBOSE} 2>&1
@@ -265,7 +285,23 @@ extract()
             green "  -> extracting packetstorm archives ..." > ${VERBOSE} 2>&1
             extract_pstorm
             ;;
+        3)
+            green "  -> extracting m00-exploits archives ..." > ${VERBOSE} 2>&1
+            extract_m00
+            ;;
     esac
+
+    return ${SUCCESS}
+}
+
+
+# download m00 exploit archives from our github repository
+fetch_m00()
+{
+    green "  -> downloading m00-exploits from github ..." > ${VERBOSE} 2>&1
+    
+    curl -# -A "${USERAGENT}" -L -O ${M00_URL} > ${DEBUG} 2>&1 ||
+        err "failed to download m00-exploits"
 
     return ${SUCCESS}
 }
@@ -334,7 +370,11 @@ fetch()
     then
         fetch_pstorm
     fi
-
+    if [ "${site}" = "0" -o "${site}" = "3" ]
+    then
+        fetch_m00
+    fi
+    
     return ${SUCCESS}
 }
 
@@ -344,6 +384,7 @@ make_exploit_dirs()
 {
     xploitdb_dir="${EXPLOIT_DIR}/exploit-db"
     pstorm_dir="${EXPLOIT_DIR}/packetstorm"
+    m00_dir="${EXPLOIT_DIR}/m00-exploits"
     
     if [ ! -d ${EXPLOIT_DIR} ]
     then
@@ -363,6 +404,12 @@ make_exploit_dirs()
     then
          mkdir ${pstorm_dir} > ${DEBUG} 2>&1 ||
             err "failed to create ${pstorm_dir}"
+    fi
+    
+    if [ ! -d ${m00_dir} ]
+    then
+         mkdir ${m00_dir} > ${DEBUG} 2>&1 ||
+            err "failed to create ${m00_dir}"
     fi
 
     cd "${EXPLOIT_DIR}"
@@ -423,8 +470,10 @@ check_site()
         green "  -> 0 - all exploit sites"
         green "  -> 1 - exploit-db.com"
         green "  -> 2 - packetstormsecurity.org"
+        green "  -> 3 - m00 exploits (github)"
         exit ${SUCCESS}
-    elif [ "${site}" != "0" -a "${site}" != "1" -a "${site}" != "2" ]
+    elif [ "${site}" != "0" -a "${site}" != "1" -a "${site}" != "2" \
+      -a "${site}" != "3" ]
     then
         err "unknown exploit site"
     fi
