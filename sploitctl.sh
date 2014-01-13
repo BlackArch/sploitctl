@@ -27,7 +27,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v0.8"
+VERSION="sploitctl.sh v0.9"
 
 # true / false
 FALSE="0"
@@ -59,7 +59,7 @@ M00_URL="https://github.com/BlackArch/m00-exploits/raw/master/m00-exploits.tar.g
 CLEAN=1
 
 # user agent string for curl
-USERAGENT="blackarch/${VERSION}" 
+USERAGENT="blackarch/${VERSION}"
 
 # browser open url in web search option
 BROWSER="firefox"
@@ -177,11 +177,11 @@ search_db()
         grep -i "${srch_str}" "${EXPLOIT_DIR}/exploit-db/files.csv" \
             2> /dev/null | cut -d ',' -f 2-4 | tr -s ',' ' ' |
         sed -e "s/platforms/\/exploit-db/g"
-        
+
         green "  -> searching in packetstorm" > ${VERBOSE} 2>&1
         grep -ri --exclude='*htm*' "${srch_str}" "${EXPLOIT_DIR}/packetstorm/" \
             2> /dev/null | grep "/packetstorm" | cut -d '/' -f 3-
-        
+
         green "  -> searching in m00-exploits" > ${VERBOSE} 2>&1
         grep -ir "${srch_str}" "${EXPLOIT_DIR}/m00-exploits" 2> /dev/null
     else
@@ -196,9 +196,9 @@ open_browser()
 {
     url="${1}"
     name="${2}"
-    
+
     domain=`printf "%s" "${url}" | sed 's|\(http://[^/]*/\).*|\1|g'`
-    
+
     green "  -> opening '${domain}' in ${BROWSER}" > ${VERBOSE} 2>&1
     "${BROWSER}" "${url}${name}"
 
@@ -211,14 +211,14 @@ search_web()
     name=${srch_str}
 
     blue "[*] searching '${name}'"
-    
+
     while read -r;
     do
         open_browser "${REPLY}" "${name}"
-    done < "${URL_FILE}" 
+    done < "${URL_FILE}"
 
     return "${SUCCESS}"
-} 
+}
 
 
 # extract m00-exploits archives and do changes if necessary
@@ -227,7 +227,7 @@ extract_m00()
     green "  -> extracting m00-exploits.tar.gz ..." > ${VERBOSE} 2>&1
     tar xfvz m00-exploits.tar.gz > ${DEBUG} 2>&1 ||
       warn "failed to extract m00-exploits ${f}"
- 
+
     return ${SUCCESS}
 }
 
@@ -241,7 +241,7 @@ extract_pstorm()
         tar xfvz ${f} -C "${pstorm_dir}/" > ${DEBUG} 2>&1 ||
             warn "failed to extract packetstorm ${f}"
     done
- 
+
     return ${SUCCESS}
 }
 
@@ -249,19 +249,22 @@ extract_pstorm()
 # extract exploit-db archive and do changes if necessary
 extract_xploitdb()
 {
-    green "  -> extracting archive.tar.bz2 ..." > ${VERBOSE} 2>&1
-    
-    bunzip2 -f archive.tar.bz2 > ${DEBUG} 2>&1 ||
-        err "failed to extract exploit-db"
-    tar xfv archive.tar > ${DEBUG} 2>&1 || warn "failed to extract exploit-db"
-    
-    mv platforms/* ${xploitdb_dir} > ${DEBUG} 2>&1
-    mv files.csv ${xploitdb_dir} > ${DEBUG} 2>&1
-    
-    rm -rf platforms > ${DEBUG} 2>&1
-    
+#    green "  -> extracting archive.tar.bz2 ..." > ${VERBOSE} 2>&1
+
+#    bunzip2 -f archive.tar.bz2 > ${DEBUG} 2>&1 ||
+#        err "failed to extract exploit-db"
+#    tar xfv archive.tar > ${DEBUG} 2>&1 ||
+#        warn "failed to extract exploit-db"
+
+#    mv platforms/* ${xploitdb_dir} > ${DEBUG} 2>&1
+#    mv files.csv ${xploitdb_dir} > ${DEBUG} 2>&1
+
+#    rm -rf platforms > ${DEBUG} 2>&1
+
+    blue "[*] fixing permissions"
+
     find ${xploitdb_dir} -type f -exec chmod 640 {} \; > ${DEBUG} 2>&1
- 
+
     return ${SUCCESS}
 }
 
@@ -278,7 +281,7 @@ extract()
             extract_m00
             ;;
         1)
-            green "  -> extracting exploit-db archives ..." > ${VERBOSE} 2>&1
+            #green "  -> extracting exploit-db archives ..." > ${VERBOSE} 2>&1
             extract_xploitdb
             ;;
         2)
@@ -295,11 +298,12 @@ extract()
 }
 
 
-# download m00 exploit archives from our github repository
+# download m00 exploit archives from our github repository. some greets here to
+# crash-x darkeagle and my old homies :(
 fetch_m00()
 {
     green "  -> downloading m00-exploits from github ..." > ${VERBOSE} 2>&1
-    
+
     curl -# -A "${USERAGENT}" -L -O ${M00_URL} > ${DEBUG} 2>&1 ||
         err "failed to download m00-exploits"
 
@@ -349,9 +353,19 @@ fetch_pstorm()
 fetch_xploitdb()
 {
     green "  -> downloading archive from exploit-db ..." > ${VERBOSE} 2>&1
-    
-    curl -# -A "${USERAGENT}" -O ${XPLOITDB_URL}  > ${DEBUG} 2>&1 ||
-        err "failed to download exploit-db"
+
+    if [ ! -f "${xploitdb_dir}/files.csv" ]
+    then
+        git clone https://github.com/offensive-security/exploit-database.git \
+            exploit-db > ${DEBUG} 2>&1
+    else
+        cd ${xploitdb_dir}
+        git pull > ${DEBUG} 2>&1
+        cd ..
+    fi
+
+    #curl -# -A "${USERAGENT}" -O ${XPLOITDB_URL}  > ${DEBUG} 2>&1 ||
+    #    err "failed to download exploit-db"
 
     return ${SUCCESS}
 }
@@ -374,7 +388,7 @@ fetch()
     then
         fetch_m00
     fi
-    
+
     return ${SUCCESS}
 }
 
@@ -385,7 +399,7 @@ make_exploit_dirs()
     xploitdb_dir="${EXPLOIT_DIR}/exploit-db"
     pstorm_dir="${EXPLOIT_DIR}/packetstorm"
     m00_dir="${EXPLOIT_DIR}/m00-exploits"
-    
+
     if [ ! -d ${EXPLOIT_DIR} ]
     then
         if ! mkdir ${EXPLOIT_DIR} > ${DEBUG} 2>&1
@@ -405,7 +419,7 @@ make_exploit_dirs()
          mkdir ${pstorm_dir} > ${DEBUG} 2>&1 ||
             err "failed to create ${pstorm_dir}"
     fi
-    
+
     if [ ! -d ${m00_dir} ]
     then
          mkdir ${m00_dir} > ${DEBUG} 2>&1 ||
@@ -447,7 +461,7 @@ usage()
     echo "  -H      - print this help and exit"
 
     exit ${SUCCESS}
-    
+
     return ${SUCCESS}
 }
 
@@ -507,7 +521,7 @@ check_args()
     if [ "${job}" = "search_web" ] && [ ! -f "${URL_FILE}" ]
     then
         err "failed to get url file for web searching - try -l <file>"
-    fi 
+    fi
     return ${SUCCESS}
 }
 
