@@ -27,7 +27,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v0.9"
+VERSION="sploitctl.sh v1.0"
 
 # true / false
 FALSE="0"
@@ -44,7 +44,7 @@ VERBOSE="/dev/null"
 DEBUG="/dev/null"
 
 # exploit base directory
-EXPLOIT_DIR="/var/exploits"
+EXPLOIT_DIR="/usr/share/exploits"
 
 # link to exploit-db's exploit archive
 XPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
@@ -432,6 +432,28 @@ make_exploit_dirs()
 }
 
 
+# checks for old exploit dir: /var/exploits
+check_old_expl_dir()
+{
+    if [ -d "/var/exploits" ]
+    then
+        warn "old directory \"/var/exploits\" exists!"
+        printf "`tput setaf 2``tput bold`  -> delete old directory?`tput sgr0`"
+        printf "`tput setaf 2``tput bold` [y/N]:`tput sgr0` "
+        read answer
+        if [ "${answer}" = "y" ]
+        then
+            green " -> deleting \"/var/exploits\" ..."
+            rm -rf "/var/exploits"
+        else
+            return ${SUCCESS}
+        fi
+    fi
+
+    return ${SUCCESS}
+}
+
+
 # usage and help
 usage()
 {
@@ -445,7 +467,7 @@ usage()
     echo "                websites - ? to list sites"
     echo "  -s <str>    - exploit to search for using <str> pattern match"
     echo "  -w <str>    - exploit to search in web exploit site"
-    echo "  -e <dir>    - exploit directory (default: /var/exploits)"
+    echo "  -e <dir>    - exploit directory (default: /usr/share/exploits)"
     echo "  -b <url>    - give a new base url for packetstorm"
     echo "                (default: http://dl.packetstormsecurity.com/)"
     echo "  -l <file>   - give a new base path/file for website list option"
@@ -593,6 +615,7 @@ main()
 
     if [ "${job}" = "fetch" ]
     then
+        check_old_expl_dir
         make_exploit_dirs
         fetch
         extract
