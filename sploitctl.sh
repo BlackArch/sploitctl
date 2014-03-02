@@ -15,7 +15,6 @@
 #                                                                              #
 # AUTHORS                                                                      #
 # noptrix@nullsecurity.net                                                     #
-# archey@riseup.net                                                            #
 # teitelmanevan@gmail.com                                                      #
 # nrz@nullsecurity.net                                                         #
 #                                                                              #
@@ -27,7 +26,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.0"
+VERSION="sploitctl.sh v1.1"
 
 # true / false
 FALSE="0"
@@ -249,18 +248,6 @@ extract_pstorm()
 # extract exploit-db archive and do changes if necessary
 extract_xploitdb()
 {
-#    green "  -> extracting archive.tar.bz2 ..." > ${VERBOSE} 2>&1
-
-#    bunzip2 -f archive.tar.bz2 > ${DEBUG} 2>&1 ||
-#        err "failed to extract exploit-db"
-#    tar xfv archive.tar > ${DEBUG} 2>&1 ||
-#        warn "failed to extract exploit-db"
-
-#    mv platforms/* ${xploitdb_dir} > ${DEBUG} 2>&1
-#    mv files.csv ${xploitdb_dir} > ${DEBUG} 2>&1
-
-#    rm -rf platforms > ${DEBUG} 2>&1
-
     blue "[*] fixing permissions"
 
     find ${xploitdb_dir} -type f -exec chmod 640 {} \; > ${DEBUG} 2>&1
