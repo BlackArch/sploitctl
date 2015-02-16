@@ -22,7 +22,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.3"
+VERSION="sploitctl.sh v1.4"
 
 # true / false
 FALSE=0
@@ -504,7 +504,7 @@ usage()
 {
     echo "usage:"
     echo ""
-    echo "  sploitctl.sh -f <arg> | -s <arg> [options] | <misc>"
+    echo "  sploitctl.sh -f <arg> | -u <arg> | -s <arg> | -e <arg> [options] | <misc>"
     echo ""
     echo "options:"
     echo ""
