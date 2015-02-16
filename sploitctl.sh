@@ -22,7 +22,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.2"
+VERSION="sploitctl.sh v1.3"
 
 # true / false
 FALSE=0
@@ -41,8 +41,14 @@ DEBUG="/dev/null"
 # exploit base directory
 EXPLOIT_DIR="/usr/share/exploits"
 
+# exploit subdirectories
+EXPLOITDB_DIR="${EXPLOIT_DIR}/exploit-db"
+PSTORM_DIR="${EXPLOIT_DIR}/packetstorm"
+M00_DIR="${EXPLOIT_DIR}/m00-exploits"
+LSDPL_DIR="${EXPLOIT_DIR}/lsd-pl-exploits"
+
 # link to exploit-db's exploit archive
-XPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
+EXPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
 
 # base url for packetstorm
 PSTORM_URL="http://dl.packetstormsecurity.com/"
@@ -215,7 +221,7 @@ extract_pstorm()
 
 
 # extract exploit-db archive and do changes if necessary
-extract_xploitdb()
+extract_exploitdb()
 {
     return $SUCCESS
 }
@@ -228,7 +234,8 @@ extract()
 
     case $site in
         0)
-            extract_xploitdb
+            vmsg "extracting all archives" > ${VERBOSE} 2>&1
+            extract_exploitdb
             extract_pstorm
             extract_m00
             extract_lsdpl
@@ -250,6 +257,68 @@ extract()
             extract_lsdpl
             ;;
 
+    esac
+
+    return $SUCCESS
+}
+
+
+# update lsd-pl archive
+update_lsdpl()
+{
+    return $SUCCESS
+}
+
+
+# update m00 archive
+update_m00()
+{
+    return $SUCCESS
+}
+
+
+# update packetstorm archive
+# TODO
+update_pstorm()
+{
+    return $SUCCESS
+}
+
+
+# update exploit-db archive
+update_exploitdb()
+{
+    if [ -f "${EXPLOITDB_DIR}/files.csv" ]
+    then
+        cd ${EXPLOITDB_DIR}
+        git stash > ${DEBUG} 2>&1
+        git pull > ${DEBUG} 2>&1
+        cd ..
+    fi
+
+    return $SUCCESS
+}
+
+
+# update existing exploit archives
+update()
+{
+    msg "updating exploit archives"
+
+    case $site in
+        0)
+            vmsg "updating all exploit archives" > ${VERBOSE} 2>&1
+            update_exploitdb
+            update_pstorm
+            ;;
+        1)
+            vmsg "updating exploit-db archive" > ${VERBOSE} 2>&1
+            update_exploitdb
+            ;;
+        2)
+            vmsg "upating packetstorm archive" > ${VERBOSE} 2>&1
+            update_pstorm
+            ;;
     esac
 
     return $SUCCESS
@@ -332,18 +401,14 @@ fetch_pstorm()
 
 
 # download exploit archives from exploit-db
-fetch_xploitdb()
+fetch_exploitdb()
 {
     vmsg "downloading archive from exploit-db" > ${VERBOSE} 2>&1
 
-    if [ ! -f "${xploitdb_dir}/files.csv" ]
+    if [ ! -f "${exploitdb_dir}/files.csv" ]
     then
         git clone https://github.com/offensive-security/exploit-database.git \
-            exploit-db > ${DEBUG} 2>&1
-    else
-        cd ${xploitdb_dir}
-        git pull > ${DEBUG} 2>&1
-        cd ..
+          exploit-db > ${DEBUG} 2>&1
     fi
 
     return $SUCCESS
@@ -357,7 +422,7 @@ fetch()
 
     if [ $site -eq 0 -o $site -eq 1 ]
     then
-        fetch_xploitdb
+        fetch_exploitdb
     fi
     if [ $site -eq 0 -o $site -eq 2 ]
     then
@@ -379,11 +444,6 @@ fetch()
 # define and create exploit dirs for each site
 make_exploit_dirs()
 {
-    xploitdb_dir="${EXPLOIT_DIR}/exploit-db"
-    pstorm_dir="${EXPLOIT_DIR}/packetstorm"
-    m00_dir="${EXPLOIT_DIR}/m00-exploits"
-    lsdpl_dir="${EXPLOIT_DIR}/lsd-pl-exploits"
-
     if [ ! -d ${EXPLOIT_DIR} ]
     then
         if ! mkdir ${EXPLOIT_DIR} > ${DEBUG} 2>&1
@@ -391,24 +451,24 @@ make_exploit_dirs()
             err "failed to create ${EXPLOIT_DIR}"
         fi
     fi
-    if [ ! -d ${xploitdb_dir} ]
+    if [ ! -d ${EXPLOITDB_DIR} ]
     then
-         mkdir ${xploitdb_dir} > ${DEBUG} 2>&1 ||
-            err "failed to create ${xploitdb_dir}"
+         mkdir ${EXPLOITDB_DIR} > ${DEBUG} 2>&1 ||
+            err "failed to create ${exploitdb_dir}"
     fi
-    if [ ! -d ${pstorm_dir} ]
+    if [ ! -d ${PSTORM_DIR} ]
     then
-         mkdir ${pstorm_dir} > ${DEBUG} 2>&1 ||
+         mkdir ${PSTORM_DIR} > ${DEBUG} 2>&1 ||
             err "failed to create ${pstorm_dir}"
     fi
-    if [ ! -d ${m00_dir} ]
+    if [ ! -d ${M00_DIR} ]
     then
-         mkdir ${m00_dir} > ${DEBUG} 2>&1 ||
+         mkdir ${M00_DIR} > ${DEBUG} 2>&1 ||
             err "failed to create ${m00_dir}"
     fi
-    if [ ! -d ${lsdpl_dir} ]
+    if [ ! -d ${LSDPL_DIR} ]
     then
-         mkdir ${lsdpl_dir} > ${DEBUG} 2>&1 ||
+         mkdir ${LSDPL_DIR} > ${DEBUG} 2>&1 ||
             err "failed to create ${lsdpl_dir}"
     fi
 
@@ -449,7 +509,9 @@ usage()
     echo "options:"
     echo ""
     echo "  -f <num>    - download and extract exploit archives from chosen"
-    echo "                websites (default: all) - ? to list sites"
+    echo "                sites (default: all) - ? to list sites"
+    echo "  -u <num>    - update exploit archive from chosen site (default: all)"
+    echo "              - ? to list sites"
     echo "  -s <str>    - exploit to search using <str> in ${EXPLOIT_DIR}"
     echo "  -w <str>    - exploit to search in web exploit site"
     echo "  -e <dir>    - exploits base directory (default: /usr/share/exploits)"
@@ -537,21 +599,26 @@ check_args()
 # parse command line options
 get_opts()
 {
-    while getopts f:s:w:e:b:l:cvdVH flags
+    while getopts f:u:s:w:e:b:l:cvdVH flags
     do
         case ${flags} in
             f)
-                site=${OPTARG}
                 job="fetch"
+                site=${OPTARG}
+                check_site
+                ;;
+            u)
+                job="update"
+                site=${OPTARG}
                 check_site
                 ;;
             s)
-                srch_str="${OPTARG}"
                 job="search_archive"
+                srch_str="${OPTARG}"
                 ;;
             w)
-                srch_str="${OPTARG}"
                 job="search_web"
+                srch_str="${OPTARG}"
                 ;;
             e)
                 EXPLOIT_DIR="${OPTARG}"
@@ -596,23 +663,28 @@ main()
     get_opts "${@}"
     check_args "${@}"
 
-    if [ "${job}" = "fetch" ]
-    then
-        check_old_expl_dir
-        make_exploit_dirs
-        fetch
-        extract
-        fix_perms
-        clean
-    elif [ "${job}" = "search_archive" ]
-    then
-        search_archive
-    elif [ "${job}" = "search_web" ]
-    then
-        search_web
-    else
-        err "WTF?! mount /dev/brain"
-    fi
+    case "${job}" in
+        "fetch")
+            check_old_expl_dir
+            make_exploit_dirs
+            fetch
+            extract
+            fix_perms
+            clean
+            ;;
+        "update")
+            update
+            fix_perms
+            ;;
+        "search_archive")
+            search_archive
+            ;;
+        "search_web")
+            search_web
+            ;;
+        *)
+            err "WTF?! mount /dev/brain"
+    esac
 
     msg "game over"
 
