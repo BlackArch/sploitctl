@@ -242,7 +242,7 @@ extract()
             ;;
         1)
             vmsg "extracting exploit-db archives" > ${VERBOSE} 2>&1
-            extract_xploitdb
+            extract_exploitdb
             ;;
         2)
             vmsg "extracting packetstorm archives" > ${VERBOSE} 2>&1
