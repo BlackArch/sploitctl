@@ -6,8 +6,6 @@
 # FILE                                                                         #
 # sploitctl.sh                                                                 #
 #                                                                              #
-# DATE                                                                         #
-# 2013-12-04                                                                   #
 #                                                                              #
 # DESCRIPTION                                                                  #
 # Script to fetch, install, update and search exploit archives from well-known #
@@ -17,9 +15,16 @@
 # noptrix@nullsecurity.net                                                     #
 # teitelmanevan@gmail.com                                                      #
 # nrz@nullsecurity.net                                                         #
+# kurobeats@outlook.com                                                        #
 #                                                                              #
 ################################################################################
 
+# Check to ensure the script is run as root/sudo
+if [ "$(id -u)" != "0" ]; 
+then
+echo "This script must be run as root. Later hater." 1>&2
+exit 1
+fi
 
 # sploitctl.sh version
 VERSION="sploitctl.sh v1.4"
@@ -66,7 +71,7 @@ CLEAN=1
 USERAGENT="blackarch/${VERSION}"
 
 # browser open url in web search option
-BROWSER="firefox"
+BROWSER="xdg-open" # allow for use of user defined default browser
 
 # default url list for web option
 URL_FILE="/usr/share/sploitctl/web/url.lst"
