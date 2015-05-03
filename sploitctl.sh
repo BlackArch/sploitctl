@@ -6,7 +6,6 @@
 # FILE                                                                         #
 # sploitctl.sh                                                                 #
 #                                                                              #
-#                                                                              #
 # DESCRIPTION                                                                  #
 # Script to fetch, install, update and search exploit archives from well-known #
 # sites like packetstormsecurity.org and exploit-db.com.                       #
@@ -19,15 +18,9 @@
 #                                                                              #
 ################################################################################
 
-# Check to ensure the script is run as root/sudo
-if [ "$(id -u)" != "0" ]; 
-then
-echo "This script must be run as root. Later hater." 1>&2
-exit 1
-fi
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.4"
+VERSION="sploitctl.sh v1.5"
 
 # true / false
 FALSE=0
@@ -601,6 +594,16 @@ check_args()
 }
 
 
+# check to ensure the script is run as root/sudo
+check_uid()
+{
+    if [ "`id -u`" != "0" ]
+    then
+        err "This script must be run as root. Later hater."
+    fi
+}
+
+
 # parse command line options
 get_opts()
 {
@@ -667,6 +670,7 @@ main()
     check_argc "${@}"
     get_opts "${@}"
     check_args "${@}"
+    check_uid
 
     case "${job}" in
         "fetch")
