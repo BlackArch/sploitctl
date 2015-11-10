@@ -20,7 +20,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.5"
+VERSION="sploitctl.sh v1.5.1"
 
 # true / false
 FALSE=0
@@ -49,7 +49,7 @@ LSDPL_DIR="${EXPLOIT_DIR}/lsd-pl-exploits"
 EXPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
 
 # base url for packetstorm
-PSTORM_URL="http://dl.packetstormsecurity.com/"
+PSTORM_URL="https://dl.packetstormsecurity.net/"
 
 # link to m00 exploits archive
 M00_URL="https://github.com/BlackArch/m00-exploits/raw/master/m00-exploits.tar.gz"
@@ -387,7 +387,7 @@ fetch_pstorm()
                 month="$m"
             fi
             vmsg "downloading $year$month-exploits.tgz" > ${VERBOSE} 2>&1
-            curl -# -A "${USERAGENT}" -O \
+            curl -k -# -A "${USERAGENT}" -O \
                 "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
                 > ${DEBUG} 2>&1 || err "failed to download packetstorm"
         done
@@ -507,8 +507,8 @@ usage()
     echo "options:"
     echo ""
     echo "  -f <num>    - download and extract exploit archives from chosen"
-    echo "                sites (default: all) - ? to list sites"
-    echo "  -u <num>    - update exploit archive from chosen site (default: all)"
+    echo "                sites - ? to list sites"
+    echo "  -u <num>    - update exploit archive from chosen site"
     echo "              - ? to list sites"
     echo "  -s <str>    - exploit to search using <str> in ${EXPLOIT_DIR}"
     echo "  -w <str>    - exploit to search in web exploit site"
