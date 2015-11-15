@@ -20,7 +20,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.5.3"
+VERSION="sploitctl.sh v1.5.4"
 
 # true / false
 FALSE=0
@@ -405,7 +405,7 @@ fetch_exploitdb()
 {
     vmsg "downloading archive from exploit-db" > ${VERBOSE} 2>&1
 
-    if [ ! -f "${exploitdb_dir}/files.csv" ]
+    if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
     then
         git clone https://github.com/offensive-security/exploit-database.git \
           exploit-db > ${DEBUG} 2>&1
@@ -454,22 +454,22 @@ make_exploit_dirs()
     if [ ! -d ${EXPLOITDB_DIR} ]
     then
          mkdir ${EXPLOITDB_DIR} > ${DEBUG} 2>&1 ||
-            err "failed to create ${exploitdb_dir}"
+            err "failed to create ${EXPLOITDB_DIR}"
     fi
     if [ ! -d ${PSTORM_DIR} ]
     then
          mkdir ${PSTORM_DIR} > ${DEBUG} 2>&1 ||
-            err "failed to create ${pstorm_dir}"
+            err "failed to create ${PSTORM_DIR}"
     fi
     if [ ! -d ${M00_DIR} ]
     then
          mkdir ${M00_DIR} > ${DEBUG} 2>&1 ||
-            err "failed to create ${m00_dir}"
+            err "failed to create ${M00_DIR}"
     fi
     if [ ! -d ${LSDPL_DIR} ]
     then
          mkdir ${LSDPL_DIR} > ${DEBUG} 2>&1 ||
-            err "failed to create ${lsdpl_dir}"
+            err "failed to create ${LSDPL_DIR}"
     fi
 
     cd "${EXPLOIT_DIR}"
