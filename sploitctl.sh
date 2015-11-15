@@ -389,7 +389,7 @@ fetch_pstorm()
             fi
             vmsg "downloading $year$month-exploits.tgz" > ${VERBOSE} 2>&1
             curl -k -# -A "${USERAGENT}" -O \
-                "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
+              "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
                 > ${DEBUG} 2>&1 || err "failed to download packetstorm"
         done
         y=`expr $y + 1`
