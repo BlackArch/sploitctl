@@ -20,7 +20,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.5.2"
+VERSION="sploitctl.sh v1.5.3"
 
 # true / false
 FALSE=0
@@ -49,7 +49,8 @@ LSDPL_DIR="${EXPLOIT_DIR}/lsd-pl-exploits"
 EXPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
 
 # base url for packetstorm
-PSTORM_URL="http://packetstorm.wowhacker.com/"
+PSTORM_URL="http://packetstorm.foofus.com/"
+#PSTORM_URL="http://packetstorm.wowhacker.com/"
 #PSTORM_URL="https://dl.packetstormsecurity.net/"
 
 # link to m00 exploits archive
