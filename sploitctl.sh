@@ -20,7 +20,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.5.4"
+VERSION="sploitctl.sh v1.5.5"
 
 # true / false
 FALSE=0
@@ -48,7 +48,7 @@ LSDPL_DIR="${EXPLOIT_DIR}/lsd-pl-exploits"
 # link to exploit-db's exploit archive
 EXPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
 
-# base url for packetstorm
+# default base url for packetstorm
 PSTORM_URL="http://packetstorm.foofus.com/"
 #PSTORM_URL="http://packetstorm.wowhacker.com/"
 #PSTORM_URL="https://dl.packetstormsecurity.net/"
@@ -212,7 +212,7 @@ extract_pstorm()
     for f in *.tgz
     do
         vmsg "extracting ${f}" > ${VERBOSE} 2>&1
-        tar xfvz ${f} -C "${pstorm_dir}/" > ${DEBUG} 2>&1 ||
+        tar xfvz ${f} -C "${PSTORM_DIR}/" > ${DEBUG} 2>&1 ||
             warn "failed to extract packetstorm ${f}"
     done
 
