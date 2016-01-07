@@ -20,7 +20,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.5.5"
+VERSION="sploitctl.sh v1.5.6"
 
 # true / false
 FALSE=0
@@ -291,6 +291,8 @@ update_exploitdb()
     if [ -f "${EXPLOITDB_DIR}/files.csv" ]
     then
         cd ${EXPLOITDB_DIR}
+        git config user.email "foo@bar"
+        git config user.name "foo bar"
         git stash > ${DEBUG} 2>&1
         git pull > ${DEBUG} 2>&1
         cd ..
