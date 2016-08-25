@@ -20,7 +20,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.5.6"
+VERSION="sploitctl.sh v1.6"
 
 # true / false
 FALSE=0
@@ -49,9 +49,9 @@ LSDPL_DIR="${EXPLOIT_DIR}/lsd-pl-exploits"
 EXPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
 
 # default base url for packetstorm
-PSTORM_URL="http://packetstorm.foofus.com/"
+#PSTORM_URL="http://packetstorm.foofus.com/"
 #PSTORM_URL="http://packetstorm.wowhacker.com/"
-#PSTORM_URL="https://dl.packetstormsecurity.net/"
+PSTORM_URL="https://dl.packetstormsecurity.net/"
 
 # link to m00 exploits archive
 M00_URL="https://github.com/BlackArch/m00-exploits/raw/master/m00-exploits.tar.gz"
@@ -392,7 +392,7 @@ fetch_pstorm()
             fi
             vmsg "downloading $year$month-exploits.tgz" > ${VERBOSE} 2>&1
             curl -k -# -A "${USERAGENT}" -O \
-              "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
+                "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
                 > ${DEBUG} 2>&1 || err "failed to download packetstorm"
         done
         y=`expr $y + 1`
@@ -552,7 +552,7 @@ check_site()
     if [ "${site}" = "?" ]
     then
         msg "available exploit sites"
-        vmsg "0 - all exploit sites (default)"
+        vmsg "0 - all exploit sites"
         vmsg "1 - exploit-db.com"
         vmsg "2 - packetstormsecurity.org"
         vmsg "3 - m00-exploits"
