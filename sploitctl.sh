@@ -20,7 +20,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.6"
+VERSION="sploitctl.sh v1.6.1"
 
 # true / false
 FALSE=0
@@ -94,7 +94,7 @@ warn()
 # print verbose message
 vmsg()
 {
-    echo "    -> ${@}"
+    echo "    > ${@}"
 
     return $SUCCESS
 }
@@ -486,7 +486,7 @@ check_old_expl_dir()
     if [ -d "/var/exploits" ]
     then
         warn "old directory \"/var/exploits\" exists!"
-        printf "    -> delete old directory? [y/N]: "
+        printf "    > delete old directory? [y/N]: "
         read answer
         if [ "${answer}" = "y" ]
         then
@@ -527,7 +527,7 @@ usage()
     echo ""
     echo "misc:"
     echo ""
-    echo "  -V      - print version of packetstorm and exit"
+    echo "  -V      - print version of sploitctl and exit"
     echo "  -H      - print this help and exit"
 
     exit $SUCCESS
@@ -552,15 +552,17 @@ check_site()
     if [ "${site}" = "?" ]
     then
         msg "available exploit sites"
-        vmsg "0 - all exploit sites"
-        vmsg "1 - exploit-db.com"
-        vmsg "2 - packetstormsecurity.org"
-        vmsg "3 - m00-exploits"
-        vmsg "4 - lsd-pl-exploits"
+        vmsg "all exploit sites"
+        vmsg "exploit-db.com"
+        vmsg "packetstormsecurity.org"
+        vmsg "m00-exploits"
+        vmsg "lsd-pl-exploits"
         exit $SUCCESS
     elif [ $site -lt 0 -o $site -gt 4 ]
     then
         err "unknown exploit site"
+    else
+        err "fuck off"
     fi
 
     return $SUCCESS
