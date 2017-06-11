@@ -20,15 +20,15 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.6.2"
+VERSION="sploitctl.sh v1.6.3"
 
 # true / false
 FALSE=0
 TRUE=1
 
 # return codes
-SUCCESS=1337
-FAILURE=31337
+SUCCESS=0
+FAILURE=1
 
 # verbose mode - default: quiet
 VERBOSE="/dev/null"
@@ -552,17 +552,15 @@ check_site()
     if [ "${site}" = "?" ]
     then
         msg "available exploit sites"
-        vmsg "all exploit sites"
-        vmsg "exploit-db.com"
-        vmsg "packetstormsecurity.org"
-        vmsg "m00-exploits"
-        vmsg "lsd-pl-exploits"
+        vmsg "0   - all exploit sites"
+        vmsg "1   - exploit-db.com"
+        vmsg "2   - packetstormsecurity.org"
+        vmsg "3   - m00-exploits"
+        vmsg "4   - lsd-pl-exploits"
         exit $SUCCESS
     elif [ $site -lt 0 -o $site -gt 4 ]
     then
         err "unknown exploit site"
-    else
-        err "fuck off"
     fi
 
     return $SUCCESS
