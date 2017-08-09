@@ -151,8 +151,8 @@ search_archive()
 
     if [ -d "${EXPLOIT_DIR}" ]
     then
-        for i in `grep -ri --exclude={'*htm*','files.csv'} "${srch_str}" \
-            ${EXPLOIT_DIR} | cut -d ':' -f 1 | sort -u`
+        for i in $(grep -ri --exclude={'*htm*','files.csv'} "${srch_str}" \
+            ${EXPLOIT_DIR} | cut -d ':' -f 1 | sort -u)
         do
             printf "%-80s |   " ${i} ; grep -m 1 -i "${srch_str}" ${i}
         done | sort -u
@@ -170,7 +170,7 @@ open_browser()
     url="${1}"
     name="${2}"
 
-    domain=`printf "%s" "${url}" | sed 's|\(http://[^/]*/\).*|\1|g'`
+    domain=$(printf "%s" "${url}" | sed 's|\(http://[^/]*/\).*|\1|g')
 
     vmsg "opening '${domain}' in ${BROWSER}" > ${VERBOSE} 2>&1
     "${BROWSER}" "${url}${name}"
@@ -372,7 +372,7 @@ fetch_m00()
 fetch_pstorm()
 {
     # enough for the next 90 years ;)
-    cur_year=`date +%Y | sed 's/.*20//'`
+    cur_year=$(date +%Y | sed 's/.*20//')
     y=0
 
     vmsg "downloading archives from packetstorm" > ${VERBOSE} 2>&1
@@ -398,7 +398,7 @@ fetch_pstorm()
                 "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
                 > ${DEBUG} 2>&1 || err "failed to download packetstorm"
         done
-        y=`expr $y + 1`
+        y=$(expr $y + 1)
     done
 
     return $SUCCESS
@@ -602,7 +602,7 @@ check_args()
 # check to ensure the script is run as root/sudo
 check_uid()
 {
-    if [ "`id -u`" != "0" ]
+    if [ "$(id -u)" != "0" ]
     then
         err "This script must be run as root. Later hater."
     fi
