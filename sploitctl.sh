@@ -75,7 +75,7 @@ URL_FILE="/usr/share/sploitctl/web/url.lst"
 # print error and exit
 err()
 {
-    echo "[-] ERROR: ${@}"
+    echo "[-] ERROR: ${*}"
     exit $FAILURE
 
     return $SUCCESS
@@ -85,7 +85,7 @@ err()
 # print warning
 warn()
 {
-    echo "[!] WARNING: ${@}"
+    echo "[!] WARNING: ${*}"
 
     return $SUCCESS
 }
@@ -94,7 +94,7 @@ warn()
 # print verbose message
 vmsg()
 {
-    echo "    > ${@}"
+    echo "    > ${*}"
 
     return $SUCCESS
 }
@@ -103,7 +103,7 @@ vmsg()
 # print message
 msg()
 {
-    echo "[+] ${@}"
+    echo "[+] ${*}"
 
     return $SUCCESS
 }
