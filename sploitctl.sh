@@ -77,9 +77,8 @@ URL_FILE="/usr/share/sploitctl/web/url.lst"
 err()
 {
     echo "[-] ERROR: ${*}"
-    exit $FAILURE
 
-    return $SUCCESS
+    exit $FAILURE
 }
 
 
@@ -532,8 +531,6 @@ usage()
     echo "  -H      - print this help and exit"
 
     exit $SUCCESS
-
-    return $SUCCESS
 }
 
 
