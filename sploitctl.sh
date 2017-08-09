@@ -143,7 +143,9 @@ search_web()
 # search exploit(s) using given string pattern
 search_archive()
 {
-    local tmpfile="`mktemp`"
+    # `local` is undefined by POSIX and `tmpfile` seems to be unused. Read full commit.
+    # local tmpfile
+    # tmpfile="$(mktemp)"
 
     msg "searching exploit for '${srch_str}'"
 
