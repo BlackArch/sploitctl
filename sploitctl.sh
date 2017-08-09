@@ -23,8 +23,9 @@
 VERSION="sploitctl.sh v1.6.3"
 
 # true / false
-FALSE=0
-TRUE=1
+# Not in USE right now.
+# FALSE=0
+# TRUE=1
 
 # return codes
 SUCCESS=0
