@@ -47,7 +47,7 @@ M00_DIR="${EXPLOIT_DIR}/m00-exploits"
 LSDPL_DIR="${EXPLOIT_DIR}/lsd-pl-exploits"
 
 # link to exploit-db's exploit archive
-EXPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
+# EXPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
 
 # default base url for packetstorm
 #PSTORM_URL="http://packetstorm.foofus.com/"
