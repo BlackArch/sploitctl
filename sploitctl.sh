@@ -115,6 +115,7 @@ clean()
     if [ ${CLEAN} -eq 1 ]
     then
         msg "deleting archive files"
+        # Not defined by POSIX (SC2039). Read the commit message for details.
         rm -rf ${EXPLOIT_DIR}/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*zip} \
             > ${DEBUG} 2>&1
     fi
