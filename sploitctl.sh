@@ -188,7 +188,7 @@ extract_lsdpl()
     rm -rf lsd-pl-exploits > ${DEBUG} 2>&1
     mv lsd-pl-exploits-master lsd-pl-exploits > ${DEBUG} 2>&1
 
-    cd lsd-pl-exploits > ${DEBUG} 2>&1
+    cd lsd-pl-exploits > ${DEBUG} 2>&1 || return "${FAILURE}"
     for zip in *.zip
     do
         unzip "${zip}" > ${DEBUG} 2>&1
@@ -293,7 +293,7 @@ update_exploitdb()
 {
     if [ -f "${EXPLOITDB_DIR}/files.csv" ]
     then
-        cd ${EXPLOITDB_DIR}
+        cd "${EXPLOITDB_DIR}" || return "${FAILURE}"
         #git config user.email "foo@bar"
         #git config user.name "foo bar"
         git stash > ${DEBUG} 2>&1
@@ -477,7 +477,7 @@ make_exploit_dirs()
             err "failed to create ${LSDPL_DIR}"
     fi
 
-    cd "${EXPLOIT_DIR}"
+    cd "${EXPLOIT_DIR}" || return "${FAILURE}"
 
     return $SUCCESS
 }
