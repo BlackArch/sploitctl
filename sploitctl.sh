@@ -154,7 +154,7 @@ search_archive()
         for i in $(grep -ri --exclude={'*htm*','files.csv'} "${srch_str}" \
             ${EXPLOIT_DIR} | cut -d ':' -f 1 | sort -u)
         do
-            printf "%-80s |   " ${i} ; grep -m 1 -i "${srch_str}" ${i}
+            printf "%-80s |   " "${i}" ; grep -m 1 -i "${srch_str}" "${i}" # Could we split ';' ?
         done | sort -u
     else
         err "no exploits directory found"
@@ -191,8 +191,8 @@ extract_lsdpl()
     cd lsd-pl-exploits > ${DEBUG} 2>&1
     for zip in *.zip
     do
-        unzip ${zip} > ${DEBUG} 2>&1
-        rm -rf ${zip} > ${DEBUG} 2>&1
+        unzip "${zip}" > ${DEBUG} 2>&1
+        rm -rf "${zip}" > ${DEBUG} 2>&1
     done
 
     return $SUCCESS
@@ -215,7 +215,7 @@ extract_pstorm()
     for f in *.tgz
     do
         vmsg "extracting ${f}" > ${VERBOSE} 2>&1
-        tar xfvz ${f} -C "${PSTORM_DIR}/" > ${DEBUG} 2>&1 ||
+        tar xfvz "${f}" -C "${PSTORM_DIR}/" > ${DEBUG} 2>&1 ||
             warn "failed to extract packetstorm ${f}"
     done
 
@@ -377,7 +377,7 @@ fetch_pstorm()
 
     vmsg "downloading archives from packetstorm" > ${VERBOSE} 2>&1
 
-    while [ $y -le $cur_year ]
+    while [ "${y}" -le "${cur_year}" ]
     do
         for m in {1..12}
         do
@@ -425,19 +425,19 @@ fetch()
 {
     msg "downloading exploit archives"
 
-    if [ $site -eq 0 -o $site -eq 1 ]
+    if [ "${site}" -eq 0 -o "${site}" -eq 1 ]
     then
         fetch_exploitdb
     fi
-    if [ $site -eq 0 -o $site -eq 2 ]
+    if [ "${site}" -eq 0 -o "${site}" -eq 2 ]
     then
         fetch_pstorm
     fi
-    if [ $site -eq 0 -o $site -eq 3 ]
+    if [ "${site}" -eq 0 -o "${site}" -eq 3 ]
     then
         fetch_m00
     fi
-    if [ $site -eq 0 -o $site -eq 4 ]
+    if [ "${site}" -eq 0 -o "${site}" -eq 4 ]
     then
         fetch_lsdpl
     fi
@@ -559,7 +559,7 @@ check_site()
         vmsg "3   - m00-exploits"
         vmsg "4   - lsd-pl-exploits"
         exit $SUCCESS
-    elif [ $site -lt 0 -o $site -gt 4 ]
+    elif [ "${site}" -lt 0 -o "${site}" -gt 4 ]
     then
         err "unknown exploit site"
     fi
