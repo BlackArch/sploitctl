@@ -20,7 +20,7 @@
 
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.6.3"
+VERSION="sploitctl.sh v1.6.4"
 
 # true / false
 # Not in USE right now.
