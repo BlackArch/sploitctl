@@ -23,8 +23,9 @@
 VERSION="sploitctl.sh v1.6.3"
 
 # true / false
-FALSE=0
-TRUE=1
+# Not in USE right now.
+# FALSE=0
+# TRUE=1
 
 # return codes
 SUCCESS=0
@@ -46,7 +47,7 @@ M00_DIR="${EXPLOIT_DIR}/m00-exploits"
 LSDPL_DIR="${EXPLOIT_DIR}/lsd-pl-exploits"
 
 # link to exploit-db's exploit archive
-EXPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
+# EXPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
 
 # default base url for packetstorm
 #PSTORM_URL="http://packetstorm.foofus.com/"
@@ -75,17 +76,16 @@ URL_FILE="/usr/share/sploitctl/web/url.lst"
 # print error and exit
 err()
 {
-    echo "[-] ERROR: ${@}"
-    exit $FAILURE
+    echo "[-] ERROR: ${*}"
 
-    return $SUCCESS
+    exit $FAILURE
 }
 
 
 # print warning
 warn()
 {
-    echo "[!] WARNING: ${@}"
+    echo "[!] WARNING: ${*}"
 
     return $SUCCESS
 }
@@ -94,7 +94,7 @@ warn()
 # print verbose message
 vmsg()
 {
-    echo "    > ${@}"
+    echo "    > ${*}"
 
     return $SUCCESS
 }
@@ -103,7 +103,7 @@ vmsg()
 # print message
 msg()
 {
-    echo "[+] ${@}"
+    echo "[+] ${*}"
 
     return $SUCCESS
 }
@@ -115,7 +115,8 @@ clean()
     if [ ${CLEAN} -eq 1 ]
     then
         msg "deleting archive files"
-        rm -rf ${EXPLOIT_DIR}/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*zip} \
+        # Not defined by POSIX (SC2039). Read the commit message for details.
+        rm -rf "${EXPLOIT_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*zip} \
             > ${DEBUG} 2>&1
     fi
 
@@ -132,26 +133,29 @@ search_web()
 
     while read -r;
     do
+        # Where REPLY is defined?
         open_browser "${REPLY}" "${name}"
     done < "${URL_FILE}"
 
-    return "$SUCCESS"
+    return $SUCCESS
 }
 
 
 # search exploit(s) using given string pattern
 search_archive()
 {
-    local tmpfile="`mktemp`"
+    # `local` is undefined by POSIX and `tmpfile` seems to be unused. Read full commit.
+    # local tmpfile
+    # tmpfile="$(mktemp)"
 
     msg "searching exploit for '${srch_str}'"
 
     if [ -d "${EXPLOIT_DIR}" ]
     then
-        for i in `grep -ri --exclude={'*htm*','files.csv'} "${srch_str}" \
-            ${EXPLOIT_DIR} | cut -d ':' -f 1 | sort -u`
+        for i in $(grep -ri --exclude={'*htm*','files.csv'} "${srch_str}" \
+            "${EXPLOIT_DIR}" | cut -d ':' -f 1 | sort -u)
         do
-            printf "%-80s |   " ${i} ; grep -m 1 -i "${srch_str}" ${i}
+            printf "%-80s |   " "${i}" ; grep -m 1 -i "${srch_str}" "${i}" # Could we split ';' ?
         done | sort -u
     else
         err "no exploits directory found"
@@ -167,7 +171,7 @@ open_browser()
     url="${1}"
     name="${2}"
 
-    domain=`printf "%s" "${url}" | sed 's|\(http://[^/]*/\).*|\1|g'`
+    domain=$(printf "%s" "${url}" | sed 's|\(http://[^/]*/\).*|\1|g')
 
     vmsg "opening '${domain}' in ${BROWSER}" > ${VERBOSE} 2>&1
     "${BROWSER}" "${url}${name}"
@@ -185,11 +189,11 @@ extract_lsdpl()
     rm -rf lsd-pl-exploits > ${DEBUG} 2>&1
     mv lsd-pl-exploits-master lsd-pl-exploits > ${DEBUG} 2>&1
 
-    cd lsd-pl-exploits > ${DEBUG} 2>&1
+    cd lsd-pl-exploits > ${DEBUG} 2>&1 || return $FAILURE
     for zip in *.zip
     do
-        unzip ${zip} > ${DEBUG} 2>&1
-        rm -rf ${zip} > ${DEBUG} 2>&1
+        unzip "${zip}" > ${DEBUG} 2>&1
+        rm -rf "${zip}" > ${DEBUG} 2>&1
     done
 
     return $SUCCESS
@@ -212,7 +216,7 @@ extract_pstorm()
     for f in *.tgz
     do
         vmsg "extracting ${f}" > ${VERBOSE} 2>&1
-        tar xfvz ${f} -C "${PSTORM_DIR}/" > ${DEBUG} 2>&1 ||
+        tar xfvz "${f}" -C "${PSTORM_DIR}/" > ${DEBUG} 2>&1 ||
             warn "failed to extract packetstorm ${f}"
     done
 
@@ -221,6 +225,7 @@ extract_pstorm()
 
 
 # extract exploit-db archive and do changes if necessary
+# TODO
 extract_exploitdb()
 {
     return $SUCCESS
@@ -264,6 +269,7 @@ extract()
 
 
 # update lsd-pl archive
+# TODO
 update_lsdpl()
 {
     return $SUCCESS
@@ -271,6 +277,7 @@ update_lsdpl()
 
 
 # update m00 archive
+# TODO
 update_m00()
 {
     return $SUCCESS
@@ -290,7 +297,7 @@ update_exploitdb()
 {
     if [ -f "${EXPLOITDB_DIR}/files.csv" ]
     then
-        cd ${EXPLOITDB_DIR}
+        cd "${EXPLOITDB_DIR}" || return $FAILURE
         #git config user.email "foo@bar"
         #git config user.name "foo bar"
         git stash > ${DEBUG} 2>&1
@@ -368,13 +375,13 @@ fetch_m00()
 # TODO: dirty hack here. make it better
 fetch_pstorm()
 {
-    # enough for the next 90 years ;)
-    cur_year=`date +%Y | sed 's/.*20//'`
+    # enough for the next 83 years ;)
+    cur_year=$(date +%Y | sed 's/.*20//')
     y=0
 
     vmsg "downloading archives from packetstorm" > ${VERBOSE} 2>&1
 
-    while [ $y -le $cur_year ]
+    while [ "${y}" -le "${cur_year}" ]
     do
         for m in {1..12}
         do
@@ -395,7 +402,7 @@ fetch_pstorm()
                 "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
                 > ${DEBUG} 2>&1 || err "failed to download packetstorm"
         done
-        y=`expr $y + 1`
+        y=$((y+1))
     done
 
     return $SUCCESS
@@ -422,19 +429,19 @@ fetch()
 {
     msg "downloading exploit archives"
 
-    if [ $site -eq 0 -o $site -eq 1 ]
+    if [ "${site}" -eq 0 ] || [ "${site}" -eq 1 ]
     then
         fetch_exploitdb
     fi
-    if [ $site -eq 0 -o $site -eq 2 ]
+    if [ "${site}" -eq 0 ] || [ "${site}" -eq 2 ]
     then
         fetch_pstorm
     fi
-    if [ $site -eq 0 -o $site -eq 3 ]
+    if [ "${site}" -eq 0 ] || [ "${site}" -eq 3 ]
     then
         fetch_m00
     fi
-    if [ $site -eq 0 -o $site -eq 4 ]
+    if [ "${site}" -eq 0 ] || [ "${site}" -eq 4 ]
     then
         fetch_lsdpl
     fi
@@ -474,7 +481,7 @@ make_exploit_dirs()
             err "failed to create ${LSDPL_DIR}"
     fi
 
-    cd "${EXPLOIT_DIR}"
+    cd "${EXPLOIT_DIR}" || return ${FAILURE}
 
     return $SUCCESS
 }
@@ -531,8 +538,6 @@ usage()
     echo "  -H      - print this help and exit"
 
     exit $SUCCESS
-
-    return $SUCCESS
 }
 
 
@@ -558,7 +563,7 @@ check_site()
         vmsg "3   - m00-exploits"
         vmsg "4   - lsd-pl-exploits"
         exit $SUCCESS
-    elif [ $site -lt 0 -o $site -gt 4 ]
+    elif [ "${site}" -lt 0 ] || [ "${site}" -gt 4 ]
     then
         err "unknown exploit site"
     fi
@@ -601,7 +606,7 @@ check_args()
 # check to ensure the script is run as root/sudo
 check_uid()
 {
-    if [ "`id -u`" != "0" ]
+    if [ "$(id -u)" != "0" ]
     then
         err "This script must be run as root. Later hater."
     fi
@@ -613,15 +618,15 @@ get_opts()
 {
     while getopts f:u:s:w:e:b:l:cvdVH flags
     do
-        case ${flags} in
+        case "${flags}" in
             f)
                 job="fetch"
-                site=${OPTARG}
+                site="${OPTARG}"
                 check_site
                 ;;
             u)
                 job="update"
-                site=${OPTARG}
+                site="${OPTARG}"
                 check_site
                 ;;
             s)
