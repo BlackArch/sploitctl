@@ -19,7 +19,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.7"
+VERSION="sploitctl.sh v1.8"
 
 # return codes
 SUCCESS=0
@@ -111,7 +111,7 @@ clean()
         msg "deleting archive files"
         # Not defined by POSIX (SC2039). Read the commit message for details.
         rm -rf "${EXPLOIT_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*zip} \
-            > "${DEBUG}" 2>&1
+            > ${DEBUG} 2>&1
     fi
 
     return $SUCCESS
@@ -145,7 +145,8 @@ search_archive()
         for i in $(grep -ri --exclude={'*htm*','files.csv'} "${srch_str}" \
             "${EXPLOIT_DIR}" | cut -d ':' -f 1 | sort -u)
         do
-            printf "%-80s |   " "${i}" ; grep -m 1 -i "${srch_str}" "${i}" # Could we split ';' ?
+            # Could we split ';' ?
+            printf "%-80s |   " "${i}" ; grep -m 1 -i "${srch_str}" "${i}"
         done | sort -u
     else
         err "no exploits directory found"
@@ -163,7 +164,7 @@ open_browser()
 
     domain=$(printf "%s" "${url}" | sed 's|\(http://[^/]*/\).*|\1|g')
 
-    vmsg "opening '${domain}' in ${BROWSER}" > "${VERBOSE}" 2>&1
+    vmsg "opening '${domain}' in ${BROWSER}" > ${VERBOSE} 2>&1
     "${BROWSER}" "${url}${name}"
 
     return $SUCCESS
@@ -173,17 +174,17 @@ open_browser()
 # extract lsd-pl-exploits archives and do changes if necessary
 extract_lsdpl()
 {
-    unzip master.zip > "${DEBUG}" 2>&1 ||
+    unzip master.zip > ${DEBUG} 2>&1 ||
       warn "failed to extract lsd-pl-exploits ${f}"
 
-    rm -rf lsd-pl-exploits > "${DEBUG}" 2>&1
-    mv lsd-pl-exploits-master lsd-pl-exploits > "${DEBUG}" 2>&1
+    rm -rf lsd-pl-exploits > ${DEBUG} 2>&1
+    mv lsd-pl-exploits-master lsd-pl-exploits > ${DEBUG} 2>&1
 
-    cd lsd-pl-exploits > "${DEBUG}" 2>&1 || return $FAILURE
+    cd lsd-pl-exploits > ${DEBUG} 2>&1 || err "could not change to lsd-pl dir"
     for zip in *.zip
     do
-        unzip "${zip}" > "${DEBUG}" 2>&1
-        rm -rf "${zip}" > "${DEBUG}" 2>&1
+        unzip "${zip}" > ${DEBUG} 2>&1
+        rm -rf "${zip}" > ${DEBUG} 2>&1
     done
 
     return $SUCCESS
@@ -193,7 +194,7 @@ extract_lsdpl()
 # extract m00-exploits archives and do changes if necessary
 extract_m00()
 {
-    tar xfvz m00-exploits.tar.gz > "${DEBUG}" 2>&1 ||
+    tar xfvz m00-exploits.tar.gz > ${DEBUG} 2>&1 ||
       warn "failed to extract m00-exploits ${f}"
 
     return $SUCCESS
@@ -205,8 +206,8 @@ extract_pstorm()
 {
     for f in *.tgz
     do
-        vmsg "extracting ${f}" > "${VERBOSE}" 2>&1
-        tar xfvz "${f}" -C "${PSTORM_DIR}/" > "${DEBUG}" 2>&1 ||
+        vmsg "extracting ${f}" > ${VERBOSE} 2>&1
+        tar xfvz "${f}" -C "${PSTORM_DIR}/" > ${DEBUG} 2>&1 ||
             warn "failed to extract packetstorm ${f}"
     done
 
@@ -229,26 +230,26 @@ extract()
 
     case $site in
         0)
-            vmsg "extracting all archives" > "${VERBOSE}" 2>&1
+            vmsg "extracting all archives" > ${VERBOSE} 2>&1
             extract_exploitdb
             extract_pstorm
             extract_m00
             extract_lsdpl
             ;;
         1)
-            vmsg "extracting exploit-db archives" > "${VERBOSE}" 2>&1
+            vmsg "extracting exploit-db archives" > ${VERBOSE} 2>&1
             extract_exploitdb
             ;;
         2)
-            vmsg "extracting packetstorm archives" > "${VERBOSE}" 2>&1
+            vmsg "extracting packetstorm archives" > ${VERBOSE} 2>&1
             extract_pstorm
             ;;
         3)
-            vmsg "extracting m00-exploits archives" > "${VERBOSE}" 2>&1
+            vmsg "extracting m00-exploits archives" > ${VERBOSE} 2>&1
             extract_m00
             ;;
         4)
-            vmsg "extracting lsd-pl-exploits archives" > "${VERBOSE}" 2>&1
+            vmsg "extracting lsd-pl-exploits archives" > ${VERBOSE} 2>&1
             extract_lsdpl
             ;;
 
@@ -275,9 +276,24 @@ update_m00()
 
 
 # update packetstorm archive
-# TODO
 update_pstorm()
 {
+    today=`date +%y%m`
+
+    cd ${PSTORM_DIR}
+    last=`find . -type d | cut -d '-' -f 1 | tr -d './' | sort -u | tail -1`
+    next=`expr $last + 1`
+
+    for i in `seq $next $today`
+    do
+        vmsg "downloading ${i}-exploits.tgz" > ${VERBOSE} 2>&1
+        curl -k -# -A "${USERAGENT}" -O \
+            "${PSTORM_URL}/${i}-exploits/${i}-exploits.tgz" > ${DEBUG} 2>&1 ||
+            err "failed to download packetstorm"
+    done
+
+    extract_pstorm
+
     return $SUCCESS
 }
 
@@ -287,11 +303,11 @@ update_exploitdb()
 {
     if [ -f "${EXPLOITDB_DIR}/files.csv" ]
     then
-        cd "${EXPLOITDB_DIR}" || return $FAILURE
+        cd "${EXPLOITDB_DIR}" || err "could not change to exploit-db dir"
         #git config user.email "foo@bar"
         #git config user.name "foo bar"
-        git stash > "${DEBUG}" 2>&1
-        git pull > "${DEBUG}" 2>&1
+        git stash > ${DEBUG} 2>&1
+        git pull > ${DEBUG} 2>&1
         cd ..
     fi
 
@@ -306,16 +322,16 @@ update()
 
     case $site in
         0)
-            vmsg "updating all exploit archives" > "${VERBOSE}" 2>&1
+            vmsg "updating all exploit archives" > ${VERBOSE} 2>&1
             update_exploitdb
             update_pstorm
             ;;
         1)
-            vmsg "updating exploit-db archive" > "${VERBOSE}" 2>&1
+            vmsg "updating exploit-db archive" > ${VERBOSE} 2>&1
             update_exploitdb
             ;;
         2)
-            vmsg "upating packetstorm archive" > "${VERBOSE}" 2>&1
+            vmsg "upating packetstorm archive" > ${VERBOSE} 2>&1
             update_pstorm
             ;;
     esac
@@ -329,8 +345,9 @@ fix_perms()
 {
     msg "fixing permissions"
 
-    find "${EXPLOIT_DIR}" -type d -exec chmod 755 {} \; > "${DEBUG}" 2>&1
-    find "${EXPLOIT_DIR}" -type f -exec chmod 644 {} \; > "${DEBUG}" 2>&1
+    find "${EXPLOIT_DIR}" -type d -exec chmod 755 {} \; > ${DEBUG} 2>&1
+    find "${EXPLOIT_DIR}" -type f -exec chmod 644 {} \; > ${DEBUG} 2>&1
+    chown -R root:root ${EXPLOIT_DIR} > ${DEBUG} 2>&1
 
     return $SUCCESS
 }
@@ -339,9 +356,9 @@ fix_perms()
 # download lsd-pl exploit archives from our github repository
 fetch_lsdpl()
 {
-    vmsg "downloading lsd-pl-exploits" > "${VERBOSE}" 2>&1
+    vmsg "downloading lsd-pl-exploits" > ${VERBOSE} 2>&1
 
-    curl -# -A "${USERAGENT}" -L -O "${LSDPL_URL}" > "${DEBUG}" 2>&1 ||
+    curl -# -A "${USERAGENT}" -L -O "${LSDPL_URL}" > ${DEBUG} 2>&1 ||
         err "failed to download lsd-pl-exploits"
 
     return $SUCCESS
@@ -352,9 +369,9 @@ fetch_lsdpl()
 # crash-x darkeagle and my old homies :(
 fetch_m00()
 {
-    vmsg "downloading m00-exploits" > "${VERBOSE}" 2>&1
+    vmsg "downloading m00-exploits" > ${VERBOSE} 2>&1
 
-    curl -# -A "${USERAGENT}" -L -O "${M00_URL}" > "${DEBUG}" 2>&1 ||
+    curl -# -A "${USERAGENT}" -L -O "${M00_URL}" > ${DEBUG} 2>&1 ||
         err "failed to download m00-exploits"
 
     return $SUCCESS
@@ -366,10 +383,10 @@ fetch_m00()
 fetch_pstorm()
 {
     # enough for the next 83 years ;)
-    cur_year=$(date +%Y | sed 's/.*20//')
+    cur_year=$(date +%y)
     y=0
 
-    vmsg "downloading archives from packetstorm" > "${VERBOSE}" 2>&1
+    vmsg "downloading archives from packetstorm" > ${VERBOSE} 2>&1
 
     while [ "${y}" -le "${cur_year}" ]
     do
@@ -387,10 +404,10 @@ fetch_pstorm()
             else
                 month="${m}"
             fi
-            vmsg "downloading ${year}${month}-exploits.tgz" > "${VERBOSE}" 2>&1
+            vmsg "downloading ${year}${month}-exploits.tgz" > ${VERBOSE} 2>&1
             curl -k -# -A "${USERAGENT}" -O \
                 "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
-                > "${DEBUG}" 2>&1 || err "failed to download packetstorm"
+                > ${DEBUG} 2>&1 || err "failed to download packetstorm"
         done
         y=$((y+1))
     done
@@ -402,12 +419,12 @@ fetch_pstorm()
 # download exploit archives from exploit-db
 fetch_exploitdb()
 {
-    vmsg "downloading archive from exploit-db" > "${VERBOSE}" 2>&1
+    vmsg "downloading archive from exploit-db" > ${VERBOSE} 2>&1
 
     if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
     then
         git clone https://github.com/offensive-security/exploit-database.git \
-          exploit-db > "${DEBUG}" 2>&1
+          exploit-db > ${DEBUG} 2>&1
     fi
 
     return $SUCCESS
@@ -445,29 +462,29 @@ make_exploit_dirs()
 {
     if [ ! -d "${EXPLOIT_DIR}" ]
     then
-        if ! mkdir "${EXPLOIT_DIR}" > "${DEBUG}" 2>&1
+        if ! mkdir "${EXPLOIT_DIR}" > ${DEBUG} 2>&1
         then
             err "failed to create ${EXPLOIT_DIR}"
         fi
     fi
     if [ ! -d "${EXPLOITDB_DIR}" ]
     then
-         mkdir "${EXPLOITDB_DIR}" > "${DEBUG}" 2>&1 ||
+         mkdir "${EXPLOITDB_DIR}" > ${DEBUG} 2>&1 ||
             err "failed to create ${EXPLOITDB_DIR}"
     fi
     if [ ! -d "${PSTORM_DIR}" ]
     then
-         mkdir "${PSTORM_DIR}" > "${DEBUG}" 2>&1 ||
+         mkdir "${PSTORM_DIR}" > ${DEBUG} 2>&1 ||
             err "failed to create ${PSTORM_DIR}"
     fi
     if [ ! -d "${M00_DIR}" ]
     then
-         mkdir "${M00_DIR}" > "${DEBUG}" 2>&1 ||
+         mkdir "${M00_DIR}" > ${DEBUG} 2>&1 ||
             err "failed to create ${M00_DIR}"
     fi
     if [ ! -d "${LSDPL_DIR}" ]
     then
-         mkdir "${LSDPL_DIR}" > "${DEBUG}" 2>&1 ||
+         mkdir "${LSDPL_DIR}" > ${DEBUG} 2>&1 ||
             err "failed to create ${LSDPL_DIR}"
     fi
 
@@ -487,7 +504,7 @@ check_old_expl_dir()
         read answer
         if [ "${answer}" = "y" ]
         then
-            vmsg "deleting \"/var/exploits\" ..." > "${VERBOSE}" 2>&1
+            vmsg "deleting \"/var/exploits\" ..." > ${VERBOSE} 2>&1
             rm -rf "/var/exploits"
         else
             return $SUCCESS
@@ -683,6 +700,7 @@ main()
         "update")
             update
             fix_perms
+            clean
             ;;
         "search_archive")
             search_archive
