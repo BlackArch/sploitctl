@@ -19,11 +19,15 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.8"
+VERSION="sploitctl.sh v1.9"
 
 # return codes
 SUCCESS=0
 FAILURE=1
+
+# true / false flags
+TRUE=1
+FALSE=0
 
 # verbose mode - default: quiet
 VERBOSE="/dev/null"
@@ -55,7 +59,7 @@ M00_URL="https://github.com/BlackArch/m00-exploits/raw/master/m00-exploits.tar.g
 LSDPL_URL="https://github.com/BlackArch/lsd-pl-exploits/archive/master.zip"
 
 # clean up, delete downloaded archive files (default: on)
-CLEAN=1
+CLEAN=$TRUE
 
 # user agent string for curl
 USERAGENT="blackarch/${VERSION}"
@@ -106,11 +110,13 @@ msg()
 # delete downloaded archive files
 clean()
 {
-    if [ $CLEAN -eq 1 ]
+    if [ $CLEAN -eq $TRUE ]
     then
         msg "deleting archive files"
         # Not defined by POSIX (SC2039). Read the commit message for details.
-        rm -rf "${EXPLOIT_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*zip} \
+        rm -rf "${EXPLOIT_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip}\
+            > ${DEBUG} 2>&1
+        rm -rf "${PSTORM_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip}\
             > ${DEBUG} 2>&1
     fi
 
@@ -654,7 +660,7 @@ get_opts()
                 URL_FILE="${OPTARG}"
                 ;;
             c)
-                CLEAN=0
+                CLEAN=$FALSE
                 ;;
             v)
                 VERBOSE="/dev/stdout"
