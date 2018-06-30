@@ -3,9 +3,6 @@
 #                                                                              #
 # sploitctl.sh - fetch, install and search exploit archives from exploit sites #
 #                                                                              #
-# FILE                                                                         #
-# sploitctl.sh                                                                 #
-#                                                                              #
 # DESCRIPTION                                                                  #
 # Script to fetch, install, update and search exploit archives from well-known #
 # sites like packetstormsecurity.org and exploit-db.com.                       #
@@ -19,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v1.9"
+VERSION="sploitctl.sh v2.0"
 
 # return codes
 SUCCESS=0
@@ -74,194 +71,193 @@ URL_FILE="/usr/share/sploitctl/web/url.lst"
 # print error and exit
 err()
 {
-    echo "[-] ERROR: ${*}"
+  echo "[-] ERROR: ${*}"
 
-    exit $FAILURE
+  exit $FAILURE
 }
 
 
 # print warning
 warn()
 {
-    echo "[!] WARNING: ${*}"
+  echo "[!] WARNING: ${*}"
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # print verbose message
 vmsg()
 {
-    echo "    > ${*}"
+  echo "    > ${*}"
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # print message
 msg()
 {
-    echo "[+] ${*}"
+  echo "[+] ${*}"
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # delete downloaded archive files
 clean()
 {
-    if [ $CLEAN -eq $TRUE ]
-    then
-        msg "deleting archive files"
-        # Not defined by POSIX (SC2039). Read the commit message for details.
-        rm -rf "${EXPLOIT_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip}\
-            > ${DEBUG} 2>&1
-        rm -rf "${PSTORM_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip}\
-            > ${DEBUG} 2>&1
-    fi
+  if [ $CLEAN -eq $TRUE ]
+  then
+    msg "deleting archive files"
+    # Not defined by POSIX (SC2039). Read the commit message for details.
+    rm -rf "${EXPLOIT_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip}\
+      > ${DEBUG} 2>&1
+    rm -rf "${PSTORM_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip}\
+      > ${DEBUG} 2>&1
+  fi
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # search exploit(s) for given search pattern in web sites
 search_web()
 {
-    name="${srch_str}"
+  name="${srch_str}"
 
-    msg "searching '${name}'"
+  msg "searching '${name}'"
 
-    while read -r;
-    do
-        # Where REPLY is defined?
-        open_browser "${REPLY}" "${name}"
-    done < "${URL_FILE}"
+  while read -r;
+  do
+    # Where REPLY is defined?
+    open_browser "${REPLY}" "${name}"
+  done < "${URL_FILE}"
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # search exploit(s) using given string pattern
 search_archive()
 {
-    msg "searching exploit for '${srch_str}'"
+  msg "searching exploit for '${srch_str}'"
 
-    if [ -d "${EXPLOIT_DIR}" ]
-    then
-        for i in $(grep -ri --exclude={'*htm*','files.csv'} "${srch_str}" \
-            "${EXPLOIT_DIR}" | cut -d ':' -f 1 | sort -u)
-        do
-            # Could we split ';' ?
-            printf "%-80s |   " "${i}" ; grep -m 1 -i "${srch_str}" "${i}"
-        done | sort -u
-    else
-        err "no exploits directory found"
-    fi
+  if [ -d "${EXPLOIT_DIR}" ]
+  then
+    for i in $(grep -ri --exclude={'*htm*','files.csv'} "${srch_str}" \
+      "${EXPLOIT_DIR}" | cut -d ':' -f 1 | sort -u)
+    do
+      # Could we split ';' ?
+      printf "%-80s |   " "${i}" ; grep -m 1 -i "${srch_str}" "${i}"
+    done | sort -u
+  else
+    err "no exploits directory found"
+  fi
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # open browser for the search
 open_browser()
 {
-    url="${1}"
-    name="${2}"
+  url="${1}"
+  name="${2}"
 
-    domain=$(printf "%s" "${url}" | sed 's|\(http://[^/]*/\).*|\1|g')
+  domain=$(printf "%s" "${url}" | sed 's|\(http://[^/]*/\).*|\1|g')
 
-    vmsg "opening '${domain}' in ${BROWSER}" > ${VERBOSE} 2>&1
-    "${BROWSER}" "${url}${name}"
+  vmsg "opening '${domain}' in ${BROWSER}" > ${VERBOSE} 2>&1
+  "${BROWSER}" "${url}${name}"
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # extract lsd-pl-exploits archives and do changes if necessary
 extract_lsdpl()
 {
-    unzip master.zip > ${DEBUG} 2>&1 ||
-      warn "failed to extract lsd-pl-exploits ${f}"
+  unzip master.zip > ${DEBUG} 2>&1 ||
+    warn "failed to extract lsd-pl-exploits ${f}"
 
-    rm -rf lsd-pl-exploits > ${DEBUG} 2>&1
-    mv lsd-pl-exploits-master lsd-pl-exploits > ${DEBUG} 2>&1
+  rm -rf lsd-pl-exploits > ${DEBUG} 2>&1
+  mv lsd-pl-exploits-master lsd-pl-exploits > ${DEBUG} 2>&1
 
-    cd lsd-pl-exploits > ${DEBUG} 2>&1 || err "could not change to lsd-pl dir"
-    for zip in *.zip
-    do
-        unzip "${zip}" > ${DEBUG} 2>&1
-        rm -rf "${zip}" > ${DEBUG} 2>&1
-    done
+  cd lsd-pl-exploits > ${DEBUG} 2>&1 || err "could not change to lsd-pl dir"
+  for zip in *.zip
+  do
+    unzip "${zip}" > ${DEBUG} 2>&1
+    rm -rf "${zip}" > ${DEBUG} 2>&1
+  done
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # extract m00-exploits archives and do changes if necessary
 extract_m00()
 {
-    tar xfvz m00-exploits.tar.gz > ${DEBUG} 2>&1 ||
-      warn "failed to extract m00-exploits ${f}"
+  tar xfvz m00-exploits.tar.gz > ${DEBUG} 2>&1 ||
+    warn "failed to extract m00-exploits ${f}"
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # extract packetstorm archives and do changes if necessary
 extract_pstorm()
 {
-    for f in *.tgz
-    do
-        vmsg "extracting ${f}" > ${VERBOSE} 2>&1
-        tar xfvz "${f}" -C "${PSTORM_DIR}/" > ${DEBUG} 2>&1 ||
-            warn "failed to extract packetstorm ${f}"
-    done
+  for f in *.tgz
+  do
+    vmsg "extracting ${f}" > ${VERBOSE} 2>&1
+    tar xfvz "${f}" -C "${PSTORM_DIR}/" > ${DEBUG} 2>&1 ||
+      warn "failed to extract packetstorm ${f}"
+  done
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # extract exploit-db archive and do changes if necessary
-# TODO
 extract_exploitdb()
 {
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # extract exploit archives
 extract()
 {
-    msg "extracting exploit archives"
+  msg "extracting exploit archives"
 
-    case $site in
-        0)
-            vmsg "extracting all archives" > ${VERBOSE} 2>&1
-            extract_exploitdb
-            extract_pstorm
-            extract_m00
-            extract_lsdpl
-            ;;
-        1)
-            vmsg "extracting exploit-db archives" > ${VERBOSE} 2>&1
-            extract_exploitdb
-            ;;
-        2)
-            vmsg "extracting packetstorm archives" > ${VERBOSE} 2>&1
-            extract_pstorm
-            ;;
-        3)
-            vmsg "extracting m00-exploits archives" > ${VERBOSE} 2>&1
-            extract_m00
-            ;;
-        4)
-            vmsg "extracting lsd-pl-exploits archives" > ${VERBOSE} 2>&1
-            extract_lsdpl
-            ;;
+  case $site in
+    0)
+      vmsg "extracting all archives" > ${VERBOSE} 2>&1
+      extract_exploitdb
+      extract_pstorm
+      extract_m00
+      extract_lsdpl
+      ;;
+    1)
+      vmsg "extracting exploit-db archives" > ${VERBOSE} 2>&1
+      extract_exploitdb
+      ;;
+    2)
+      vmsg "extracting packetstorm archives" > ${VERBOSE} 2>&1
+      extract_pstorm
+      ;;
+    3)
+      vmsg "extracting m00-exploits archives" > ${VERBOSE} 2>&1
+      extract_m00
+      ;;
+    4)
+      vmsg "extracting lsd-pl-exploits archives" > ${VERBOSE} 2>&1
+      extract_lsdpl
+      ;;
 
-    esac
+  esac
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
@@ -269,7 +265,7 @@ extract()
 # TODO
 update_lsdpl()
 {
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
@@ -277,97 +273,97 @@ update_lsdpl()
 # TODO
 update_m00()
 {
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # update packetstorm archive
 update_pstorm()
 {
-    today=`date +%y%m`
+  today=`date +%y%m`
 
-    cd ${PSTORM_DIR}
-    last=`find . -type d | cut -d '-' -f 1 | tr -d './' | sort -u | tail -1`
-    next=`expr $last + 1`
+  cd ${PSTORM_DIR}
+  last=`find . -type d | cut -d '-' -f 1 | tr -d './' | sort -u | tail -1`
+  next=`expr $last + 1`
 
-    for i in `seq $next $today`
-    do
-        vmsg "downloading ${i}-exploits.tgz" > ${VERBOSE} 2>&1
-        curl -k -# -A "${USERAGENT}" -O \
-            "${PSTORM_URL}/${i}-exploits/${i}-exploits.tgz" > ${DEBUG} 2>&1 ||
-            err "failed to download packetstorm"
-    done
+  for i in `seq $next $today`
+  do
+    vmsg "downloading ${i}-exploits.tgz" > ${VERBOSE} 2>&1
+    curl -k -# -A "${USERAGENT}" -O \
+      "${PSTORM_URL}/${i}-exploits/${i}-exploits.tgz" > ${DEBUG} 2>&1 ||
+      err "failed to download packetstorm"
+  done
 
-    extract_pstorm
+  extract_pstorm
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # update exploit-db archive
 update_exploitdb()
 {
-    if [ -f "${EXPLOITDB_DIR}/files.csv" ]
-    then
-        cd "${EXPLOITDB_DIR}" || err "could not change to exploit-db dir"
-        #git config user.email "foo@bar"
-        #git config user.name "foo bar"
-        git stash > ${DEBUG} 2>&1
-        git pull > ${DEBUG} 2>&1
-        cd ..
-    fi
+  if [ -f "${EXPLOITDB_DIR}/files_exploits.csv" ]
+  then
+    cd "${EXPLOITDB_DIR}" || err "could not change to exploit-db dir"
+    #git config user.email "foo@bar"
+    #git config user.name "foo bar"
+    git stash > ${DEBUG} 2>&1
+    git pull > ${DEBUG} 2>&1
+    cd ..
+  fi
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # update existing exploit archives
 update()
 {
-    msg "updating exploit archives"
+  msg "updating exploit archives"
 
-    case $site in
-        0)
-            vmsg "updating all exploit archives" > ${VERBOSE} 2>&1
-            update_exploitdb
-            update_pstorm
-            ;;
-        1)
-            vmsg "updating exploit-db archive" > ${VERBOSE} 2>&1
-            update_exploitdb
-            ;;
-        2)
-            vmsg "upating packetstorm archive" > ${VERBOSE} 2>&1
-            update_pstorm
-            ;;
-    esac
+  case $site in
+    0)
+      vmsg "updating all exploit archives" > ${VERBOSE} 2>&1
+      update_exploitdb
+      update_pstorm
+      ;;
+    1)
+      vmsg "updating exploit-db archive" > ${VERBOSE} 2>&1
+      update_exploitdb
+      ;;
+    2)
+      vmsg "upating packetstorm archive" > ${VERBOSE} 2>&1
+      update_pstorm
+      ;;
+  esac
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # fix file permissions
 fix_perms()
 {
-    msg "fixing permissions"
+  msg "fixing permissions"
 
-    find "${EXPLOIT_DIR}" -type d -exec chmod 755 {} \; > ${DEBUG} 2>&1
-    find "${EXPLOIT_DIR}" -type f -exec chmod 644 {} \; > ${DEBUG} 2>&1
-    chown -R root:root ${EXPLOIT_DIR} > ${DEBUG} 2>&1
+  find "${EXPLOIT_DIR}" -type d -exec chmod 755 {} \; > ${DEBUG} 2>&1
+  find "${EXPLOIT_DIR}" -type f -exec chmod 644 {} \; > ${DEBUG} 2>&1
+  chown -R root:root ${EXPLOIT_DIR} > ${DEBUG} 2>&1
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # download lsd-pl exploit archives from our github repository
 fetch_lsdpl()
 {
-    vmsg "downloading lsd-pl-exploits" > ${VERBOSE} 2>&1
+  vmsg "downloading lsd-pl-exploits" > ${VERBOSE} 2>&1
 
-    curl -# -A "${USERAGENT}" -L -O "${LSDPL_URL}" > ${DEBUG} 2>&1 ||
-        err "failed to download lsd-pl-exploits"
+  curl -# -A "${USERAGENT}" -L -O "${LSDPL_URL}" > ${DEBUG} 2>&1 ||
+    err "failed to download lsd-pl-exploits"
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
@@ -375,12 +371,12 @@ fetch_lsdpl()
 # crash-x darkeagle and my old homies :(
 fetch_m00()
 {
-    vmsg "downloading m00-exploits" > ${VERBOSE} 2>&1
+  vmsg "downloading m00-exploits" > ${VERBOSE} 2>&1
 
-    curl -# -A "${USERAGENT}" -L -O "${M00_URL}" > ${DEBUG} 2>&1 ||
-        err "failed to download m00-exploits"
+  curl -# -A "${USERAGENT}" -L -O "${M00_URL}" > ${DEBUG} 2>&1 ||
+    err "failed to download m00-exploits"
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
@@ -388,339 +384,338 @@ fetch_m00()
 # TODO: dirty hack here. make it better
 fetch_pstorm()
 {
-    # enough for the next 83 years ;)
-    cur_year=$(date +%y)
-    y=0
+  # enough for the next 83 years ;)
+  cur_year=$(date +%y)
+  y=0
 
-    vmsg "downloading archives from packetstorm" > ${VERBOSE} 2>&1
+  vmsg "downloading archives from packetstorm" > ${VERBOSE} 2>&1
 
-    while [ "${y}" -le "${cur_year}" ]
+  while [ "${y}" -le "${cur_year}" ]
+  do
+    for m in {1..12}
     do
-        for m in {1..12}
-        do
-            if [ "${y}" -lt 10 ]
-            then
-                year="0${y}"
-            else
-                year="${y}"
-            fi
-            if [ "${m}" -lt 10 ]
-            then
-                month="0${m}"
-            else
-                month="${m}"
-            fi
-            vmsg "downloading ${year}${month}-exploits.tgz" > ${VERBOSE} 2>&1
-            curl -k -# -A "${USERAGENT}" -O \
-                "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
-                > ${DEBUG} 2>&1 || err "failed to download packetstorm"
-        done
-        y=$((y+1))
+      if [ "${y}" -lt 10 ]
+      then
+        year="0${y}"
+      else
+        year="${y}"
+      fi
+      if [ "${m}" -lt 10 ]
+      then
+        month="0${m}"
+      else
+        month="${m}"
+      fi
+      vmsg "downloading ${year}${month}-exploits.tgz" > ${VERBOSE} 2>&1
+      curl -k -# -A "${USERAGENT}" -O \
+        "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
+        > ${DEBUG} 2>&1 || err "failed to download packetstorm"
     done
+    y=$((y+1))
+  done
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # download exploit archives from exploit-db
 fetch_exploitdb()
 {
-    vmsg "downloading archive from exploit-db" > ${VERBOSE} 2>&1
+  vmsg "downloading archive from exploit-db" > ${VERBOSE} 2>&1
 
-    if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
-    then
-        git clone https://github.com/offensive-security/exploit-database.git \
-          exploit-db > ${DEBUG} 2>&1
-    fi
+  if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
+  then
+    git clone https://github.com/offensive-security/exploit-database.git \
+      exploit-db > ${DEBUG} 2>&1
+  fi
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # download exploit archives from chosen sites
 fetch()
 {
-    msg "downloading exploit archives"
+  msg "downloading exploit archives"
 
-    if [ "${site}" -eq 0 ] || [ "${site}" -eq 1 ]
-    then
-        fetch_exploitdb
-    fi
-    if [ "${site}" -eq 0 ] || [ "${site}" -eq 2 ]
-    then
-        fetch_pstorm
-    fi
-    if [ "${site}" -eq 0 ] || [ "${site}" -eq 3 ]
-    then
-        fetch_m00
-    fi
-    if [ "${site}" -eq 0 ] || [ "${site}" -eq 4 ]
-    then
-        fetch_lsdpl
-    fi
+  if [ "${site}" -eq 0 ] || [ "${site}" -eq 1 ]
+  then
+    fetch_exploitdb
+  fi
+  if [ "${site}" -eq 0 ] || [ "${site}" -eq 2 ]
+  then
+    fetch_pstorm
+  fi
+  if [ "${site}" -eq 0 ] || [ "${site}" -eq 3 ]
+  then
+    fetch_m00
+  fi
+  if [ "${site}" -eq 0 ] || [ "${site}" -eq 4 ]
+  then
+    fetch_lsdpl
+  fi
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # define and create exploit dirs for each site
 make_exploit_dirs()
 {
-    if [ ! -d "${EXPLOIT_DIR}" ]
+  if [ ! -d "${EXPLOIT_DIR}" ]
+  then
+    if ! mkdir "${EXPLOIT_DIR}" > ${DEBUG} 2>&1
     then
-        if ! mkdir "${EXPLOIT_DIR}" > ${DEBUG} 2>&1
-        then
-            err "failed to create ${EXPLOIT_DIR}"
-        fi
+      err "failed to create ${EXPLOIT_DIR}"
     fi
-    if [ ! -d "${EXPLOITDB_DIR}" ]
-    then
-         mkdir "${EXPLOITDB_DIR}" > ${DEBUG} 2>&1 ||
-            err "failed to create ${EXPLOITDB_DIR}"
-    fi
-    if [ ! -d "${PSTORM_DIR}" ]
-    then
-         mkdir "${PSTORM_DIR}" > ${DEBUG} 2>&1 ||
-            err "failed to create ${PSTORM_DIR}"
-    fi
-    if [ ! -d "${M00_DIR}" ]
-    then
-         mkdir "${M00_DIR}" > ${DEBUG} 2>&1 ||
-            err "failed to create ${M00_DIR}"
-    fi
-    if [ ! -d "${LSDPL_DIR}" ]
-    then
-         mkdir "${LSDPL_DIR}" > ${DEBUG} 2>&1 ||
-            err "failed to create ${LSDPL_DIR}"
-    fi
+  fi
+  if [ ! -d "${EXPLOITDB_DIR}" ]
+  then
+     mkdir "${EXPLOITDB_DIR}" > ${DEBUG} 2>&1 ||
+      err "failed to create ${EXPLOITDB_DIR}"
+  fi
+  if [ ! -d "${PSTORM_DIR}" ]
+  then
+     mkdir "${PSTORM_DIR}" > ${DEBUG} 2>&1 ||
+      err "failed to create ${PSTORM_DIR}"
+  fi
+  if [ ! -d "${M00_DIR}" ]
+  then
+     mkdir "${M00_DIR}" > ${DEBUG} 2>&1 ||
+      err "failed to create ${M00_DIR}"
+  fi
+  if [ ! -d "${LSDPL_DIR}" ]
+  then
+     mkdir "${LSDPL_DIR}" > ${DEBUG} 2>&1 ||
+      err "failed to create ${LSDPL_DIR}"
+  fi
 
-    cd "${EXPLOIT_DIR}" || return $FAILURE
+  cd "${EXPLOIT_DIR}" || return $FAILURE
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # checks for old exploit dir: /var/exploits
 check_old_expl_dir()
 {
-    if [ -d "/var/exploits" ]
+  if [ -d "/var/exploits" ]
+  then
+    warn "old directory \"/var/exploits\" exists!"
+    printf "  > delete old directory? [y/N]: "
+    read answer
+    if [ "${answer}" = "y" ]
     then
-        warn "old directory \"/var/exploits\" exists!"
-        printf "    > delete old directory? [y/N]: "
-        read answer
-        if [ "${answer}" = "y" ]
-        then
-            vmsg "deleting \"/var/exploits\" ..." > ${VERBOSE} 2>&1
-            rm -rf "/var/exploits"
-        else
-            return $SUCCESS
-        fi
+      vmsg "deleting \"/var/exploits\" ..." > ${VERBOSE} 2>&1
+      rm -rf "/var/exploits"
+    else
+      return $SUCCESS
     fi
+  fi
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # usage and help
 usage()
 {
-    echo "usage:"
-    echo ""
-    echo "  sploitctl.sh -f <arg> | -u <arg> | -s <arg> | -e <arg> [options] | <misc>"
-    echo ""
-    echo "options:"
-    echo ""
-    echo "  -f <num>    - download and extract exploit archives from chosen"
-    echo "                sites - ? to list sites"
-    echo "  -u <num>    - update exploit archive from chosen site"
-    echo "              - ? to list sites"
-    echo "  -s <str>    - exploit to search using <str> in ${EXPLOIT_DIR}"
-    echo "  -w <str>    - exploit to search in web exploit site"
-    echo "  -e <dir>    - exploits base directory (default: /usr/share/exploits)"
-    echo "  -b <url>    - give a new base url for packetstorm"
-    echo "                (default: http://dl.packetstormsecurity.com/)"
-    echo "  -l <file>   - give a new base path/file for website list option"
-    echo "                (default: /usr/share/sploitctl/web/url.lst)"
-    echo "  -c          - do not delete downloaded archive files"
-    echo "  -v          - verbose mode (default: off)"
-    echo "  -d          - debug mode (default: off)"
-    echo ""
-    echo "misc:"
-    echo ""
-    echo "  -V      - print version of sploitctl and exit"
-    echo "  -H      - print this help and exit"
+  echo "usage:"
+  echo ""
+  echo "  sploitctl.sh -f <arg> | -u <arg> | -s <arg> | -e <arg> [options] | <misc>"
+  echo ""
+  echo "options:"
+  echo ""
+  echo "  -f <num>  - download and extract exploit archives from chosen sites"
+  echo "            - ? to list sites"
+  echo "  -u <num>  - update exploit archive from chosen site - ? to list sites"
+  echo "  -s <str>  - exploit to search using <str> in ${EXPLOIT_DIR}"
+  echo "  -w <str>  - exploit to search in web exploit site"
+  echo "  -e <dir>  - exploits base directory (default: /usr/share/exploits)"
+  echo "  -b <url>  - give a new base url for packetstorm"
+  echo "            (default: http://dl.packetstormsecurity.com/)"
+  echo "  -l <file> - give a new base path/file for website list option"
+  echo "            (default: /usr/share/sploitctl/web/url.lst)"
+  echo "  -c      - do not delete downloaded archive files"
+  echo "  -v      - verbose mode (default: off)"
+  echo "  -d      - debug mode (default: off)"
+  echo ""
+  echo "misc:"
+  echo ""
+  echo "  -V    - print version of sploitctl and exit"
+  echo "  -H    - print this help and exit"
 
-    exit $SUCCESS
+  exit $SUCCESS
 }
 
 
 # leet banner, very important
 banner()
 {
-    echo "--==[ sploitctl.sh by blackarch.org ]==--"
-    echo
+  echo "--==[ sploitctl.sh by blackarch.org ]==--"
+  echo
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # check chosen website
 check_site()
 {
-    if [ "${site}" = "?" ]
-    then
-        msg "available exploit sites"
-        vmsg "0   - all exploit sites"
-        vmsg "1   - exploit-db.com"
-        vmsg "2   - packetstormsecurity.org"
-        vmsg "3   - m00-exploits"
-        vmsg "4   - lsd-pl-exploits"
-        exit $SUCCESS
-    elif [ "${site}" -lt 0 ] || [ "${site}" -gt 4 ]
-    then
-        err "unknown exploit site"
-    fi
+  if [ "${site}" = "?" ]
+  then
+    msg "available exploit sites"
+    vmsg "0   - all exploit sites"
+    vmsg "1   - exploit-db.com"
+    vmsg "2   - packetstormsecurity.org"
+    vmsg "3   - m00-exploits"
+    vmsg "4   - lsd-pl-exploits"
+    exit $SUCCESS
+  elif [ "${site}" -lt 0 ] || [ "${site}" -gt 4 ]
+  then
+    err "unknown exploit site"
+  fi
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # check argument count
 check_argc()
 {
-    if [ ${#} -lt 1 ]
-    then
-        err "-H for help and usage"
-    fi
+  if [ ${#} -lt 1 ]
+  then
+    err "-H for help and usage"
+  fi
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # check if requimsg arguments were selected
 check_args()
 {
-    msg "checking arguments"
+  msg "checking arguments"
 
-    if [ -z "${job}" ]
-    then
-        err "choose -f, -u or -s"
-    fi
+  if [ -z "${job}" ]
+  then
+    err "choose -f, -u or -s"
+  fi
 
-    if [ "${job}" = "search_web" ] && [ ! -f "${URL_FILE}" ]
-    then
-        err "failed to get url file for web searching - try -l <file>"
-    fi
+  if [ "${job}" = "search_web" ] && [ ! -f "${URL_FILE}" ]
+  then
+    err "failed to get url file for web searching - try -l <file>"
+  fi
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # check to ensure the script is run as root/sudo
 check_uid()
 {
-    if [ "$(id -u)" != "0" ]
-    then
-        err "This script must be run as root. Later hater."
-    fi
+  if [ "$(id -u)" != "0" ]
+  then
+    err "This script must be run as root. Later hater."
+  fi
 }
 
 
 # parse command line options
 get_opts()
 {
-    while getopts f:u:s:w:e:b:l:cvdVH flags
-    do
-        case "${flags}" in
-            f)
-                job="fetch"
-                site="${OPTARG}"
-                check_site
-                ;;
-            u)
-                job="update"
-                site="${OPTARG}"
-                check_site
-                ;;
-            s)
-                job="search_archive"
-                srch_str="${OPTARG}"
-                ;;
-            w)
-                job="search_web"
-                srch_str="${OPTARG}"
-                ;;
-            e)
-                EXPLOIT_DIR="${OPTARG}"
-                ;;
-            b)
-                PSTORM_URL="${OPTARG}"
-                ;;
-            l)
-                URL_FILE="${OPTARG}"
-                ;;
-            c)
-                CLEAN=$FALSE
-                ;;
-            v)
-                VERBOSE="/dev/stdout"
-                ;;
-            d)
-                DEBUG="/dev/stdout"
-                ;;
-            V)
-                echo "${VERSION}"
-                exit $SUCCESS
-                ;;
-            H)
-                usage
-                ;;
-            *)
-                err "WTF?! mount /dev/brain"
-                ;;
-        esac
-    done
+  while getopts f:u:s:w:e:b:l:cvdVH flags
+  do
+    case "${flags}" in
+      f)
+        job="fetch"
+        site="${OPTARG}"
+        check_site
+        ;;
+      u)
+        job="update"
+        site="${OPTARG}"
+        check_site
+        ;;
+      s)
+        job="search_archive"
+        srch_str="${OPTARG}"
+        ;;
+      w)
+        job="search_web"
+        srch_str="${OPTARG}"
+        ;;
+      e)
+        EXPLOIT_DIR="${OPTARG}"
+        ;;
+      b)
+        PSTORM_URL="${OPTARG}"
+        ;;
+      l)
+        URL_FILE="${OPTARG}"
+        ;;
+      c)
+        CLEAN=$FALSE
+        ;;
+      v)
+        VERBOSE="/dev/stdout"
+        ;;
+      d)
+        DEBUG="/dev/stdout"
+        ;;
+      V)
+        echo "${VERSION}"
+        exit $SUCCESS
+        ;;
+      H)
+        usage
+        ;;
+      *)
+        err "WTF?! mount /dev/brain"
+        ;;
+    esac
+  done
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
 # controller and program flow
 main()
 {
-    banner
-    check_argc "${@}"
-    get_opts "${@}"
-    check_args "${@}"
-    check_uid
+  banner
+  check_argc "${@}"
+  get_opts "${@}"
+  check_args "${@}"
+  check_uid
 
-    case "${job}" in
-        "fetch")
-            check_old_expl_dir
-            make_exploit_dirs
-            fetch
-            extract
-            fix_perms
-            clean
-            ;;
-        "update")
-            update
-            fix_perms
-            clean
-            ;;
-        "search_archive")
-            search_archive
-            ;;
-        "search_web")
-            search_web
-            ;;
-        *)
-            err "WTF?! mount /dev/brain"
-    esac
+  case "${job}" in
+    "fetch")
+      check_old_expl_dir
+      make_exploit_dirs
+      fetch
+      extract
+      fix_perms
+      clean
+      ;;
+    "update")
+      update
+      fix_perms
+      clean
+      ;;
+    "search_archive")
+      search_archive
+      ;;
+    "search_web")
+      search_web
+      ;;
+    *)
+      err "WTF?! mount /dev/brain"
+  esac
 
-    msg "game over"
+  msg "game over"
 
-    return $SUCCESS
+  return $SUCCESS
 }
 
 
