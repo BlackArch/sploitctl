@@ -16,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.0"
+VERSION="sploitctl.sh v2.0.1"
 
 # return codes
 SUCCESS=0
@@ -71,7 +71,7 @@ URL_FILE="/usr/share/sploitctl/web/url.lst"
 # print error and exit
 err()
 {
-  echo "[-] ERROR: ${*}"
+  echo "[-] ERROR: ${@}"
 
   exit $FAILURE
 }
@@ -80,7 +80,7 @@ err()
 # print warning
 warn()
 {
-  echo "[!] WARNING: ${*}"
+  echo "[!] WARNING: ${@}"
 
   return $SUCCESS
 }
@@ -89,7 +89,7 @@ warn()
 # print verbose message
 vmsg()
 {
-  echo "    > ${*}"
+  echo "    > ${@}"
 
   return $SUCCESS
 }
@@ -98,7 +98,7 @@ vmsg()
 # print message
 msg()
 {
-  echo "[+] ${*}"
+  echo "[+] ${@}"
 
   return $SUCCESS
 }
@@ -261,22 +261,6 @@ extract()
 }
 
 
-# update lsd-pl archive
-# TODO
-update_lsdpl()
-{
-  return $SUCCESS
-}
-
-
-# update m00 archive
-# TODO
-update_m00()
-{
-  return $SUCCESS
-}
-
-
 # update packetstorm archive
 update_pstorm()
 {
@@ -321,6 +305,7 @@ update_exploitdb()
 update()
 {
   msg "updating exploit archives"
+  echo
 
   case $site in
     0)
@@ -437,6 +422,7 @@ fetch_exploitdb()
 fetch()
 {
   msg "downloading exploit archives"
+  echo
 
   if [ "${site}" -eq 0 ] || [ "${site}" -eq 1 ]
   then
@@ -533,17 +519,17 @@ usage()
   echo "  -w <str>  - exploit to search in web exploit site"
   echo "  -e <dir>  - exploits base directory (default: /usr/share/exploits)"
   echo "  -b <url>  - give a new base url for packetstorm"
-  echo "            (default: http://dl.packetstormsecurity.com/)"
+  echo "              (default: http://dl.packetstormsecurity.com/)"
   echo "  -l <file> - give a new base path/file for website list option"
-  echo "            (default: /usr/share/sploitctl/web/url.lst)"
-  echo "  -c      - do not delete downloaded archive files"
-  echo "  -v      - verbose mode (default: off)"
-  echo "  -d      - debug mode (default: off)"
+  echo "              (default: /usr/share/sploitctl/web/url.lst)"
+  echo "  -c        - do not delete downloaded archive files"
+  echo "  -v        - verbose mode (default: off)"
+  echo "  -d        - debug mode (default: off)"
   echo ""
   echo "misc:"
   echo ""
-  echo "  -V    - print version of sploitctl and exit"
-  echo "  -H    - print this help and exit"
+  echo "  -V        - print version of sploitctl and exit"
+  echo "  -H        - print this help and exit"
 
   exit $SUCCESS
 }
