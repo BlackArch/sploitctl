@@ -16,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.0.3"
+VERSION="sploitctl.sh v2.0.4"
 
 # return codes
 SUCCESS=0
@@ -59,7 +59,8 @@ LSDPL_URL="https://github.com/BlackArch/lsd-pl-exploits/archive/master.zip"
 CLEAN=$TRUE
 
 # user agent string for curl
-USERAGENT="blackarch/${VERSION}"
+#USERAGENT="blackarch/${VERSION}"
+USERAGENT="Mozilla/5.0 (Windows NT 10.0; WOW64; rv:61.0) Gecko/20180101 Firefox/61.0.1"
 
 # browser open url in web search option
 BROWSER="xdg-open" # allow for use of user defined default browser
