@@ -16,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.0.5"
+VERSION="sploitctl.sh v2.0.6"
 
 # return codes
 SUCCESS=0
@@ -276,7 +276,6 @@ update_pstorm()
   for i in `seq $next $today`
   do
     vmsg "downloading ${i}-exploits.tgz" > ${VERBOSE} 2>&1
-    cd "$i-exploits/"
     curl -k -# -A "${USERAGENT}" -O "$i-exploits.tgz" > ${DEBUG} 2>&1 ||
       err "failed to download packetstorm"
     cd ../
