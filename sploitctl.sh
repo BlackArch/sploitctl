@@ -16,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.0.1"
+VERSION="sploitctl.sh v2.0.3"
 
 # return codes
 SUCCESS=0
@@ -207,10 +207,12 @@ extract_m00()
 # extract packetstorm archives and do changes if necessary
 extract_pstorm()
 {
+  cd $PSTORM_DIR
+
   for f in *.tgz
   do
     vmsg "extracting ${f}" > ${VERBOSE} 2>&1
-    tar xfvz "${f}" -C "${PSTORM_DIR}/" > ${DEBUG} 2>&1 ||
+    tar xfvz "${f}" > ${DEBUG} 2>&1 ||
       warn "failed to extract packetstorm ${f}"
   done
 
@@ -265,10 +267,10 @@ extract()
 update_pstorm()
 {
   today=`date +%y%m`
-
-  cd ${PSTORM_DIR}
   last=`find . -type d | cut -d '-' -f 1 | tr -d './' | sort -u | tail -1`
   next=`expr $last + 1`
+
+  cd $PSTORM_DIR
 
   for i in `seq $next $today`
   do
@@ -374,6 +376,8 @@ fetch_pstorm()
   y=0
 
   vmsg "downloading archives from packetstorm" > ${VERBOSE} 2>&1
+
+  cd $PSTORM_DIR
 
   while [ "${y}" -le "${cur_year}" ]
   do
