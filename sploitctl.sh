@@ -267,11 +267,11 @@ extract()
 # update packetstorm archive
 update_pstorm()
 {
-  today=`date +%y%m`
-  last=`find . -type d | cut -d '-' -f 1 | tr -d './' | sort -u | tail -1`
-  next=`expr $last + 1`
-
   cd $PSTORM_DIR
+
+  today=$(date +%y%m)
+  last=$(find . -type d | cut -d '-' -f 1 | tr -d './' | sort -u | tail -1)
+  next=$(expr $last + 1)
 
   for i in `seq $next $today`
   do
