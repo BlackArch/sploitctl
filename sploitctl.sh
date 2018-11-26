@@ -217,8 +217,6 @@ extract_pstorm()
       warn "failed to extract packetstorm ${f}"
   done
 
-  cd $EXPLOIT_DIR
-
   return $SUCCESS
 }
 
@@ -406,8 +404,6 @@ fetch_pstorm()
     done
     y=$((y+1))
   done
-
-  cd $EXPLOIT_DIR
 
   return $SUCCESS
 }
