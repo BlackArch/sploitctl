@@ -16,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.0.1"
+VERSION="sploitctl.sh v2.0.2"
 
 # return codes
 SUCCESS=0
@@ -265,17 +265,18 @@ extract()
 update_pstorm()
 {
   today=`date +%y%m`
-
-  cd ${PSTORM_DIR}
   last=`find . -type d | cut -d '-' -f 1 | tr -d './' | sort -u | tail -1`
   next=`expr $last + 1`
+
+  cd $PSTORM_DIR
 
   for i in `seq $next $today`
   do
     vmsg "downloading ${i}-exploits.tgz" > ${VERBOSE} 2>&1
-    curl -k -# -A "${USERAGENT}" -O \
-      "${PSTORM_URL}/${i}-exploits/${i}-exploits.tgz" > ${DEBUG} 2>&1 ||
+    cd "$i-exploits/"
+    curl -k -# -A "${USERAGENT}" -O "$i-exploits.tgz" > ${DEBUG} 2>&1 ||
       err "failed to download packetstorm"
+    cd ../
   done
 
   extract_pstorm
