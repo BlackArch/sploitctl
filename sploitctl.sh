@@ -275,9 +275,10 @@ update_pstorm()
   for i in `seq $next $today`
   do
     vmsg "downloading ${i}-exploits.tgz" > ${VERBOSE} 2>&1
-    curl -k -# -A "${USERAGENT}" -O \
-      "${PSTORM_URL}/${i}-exploits/${i}-exploits.tgz" > ${DEBUG} 2>&1 ||
+    cd "$i-exploits/"
+    curl -k -# -A "${USERAGENT}" -O "$i-exploits.tgz" > ${DEBUG} 2>&1 ||
       err "failed to download packetstorm"
+    cd ../
   done
 
   extract_pstorm
