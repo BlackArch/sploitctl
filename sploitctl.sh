@@ -12,6 +12,7 @@
 # teitelmanevan@gmail.com                                                      #
 # nrz@nullsecurity.net                                                         #
 # kurobeats@outlook.com                                                        #
+# sepehrdad.dev@gmail.com                                                      #
 #                                                                              #
 ################################################################################
 
