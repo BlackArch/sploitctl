@@ -68,6 +68,13 @@ BROWSER="xdg-open" # allow for use of user defined default browser
 # default url list for web option
 URL_FILE="/usr/share/sploitctl/web/url.lst"
 
+# default Threads number
+THREADS_NUM=5
+
+# download managers
+WGET_DL="wget -U '${USERAGENT}'"
+CURL_DL="curl -k -# -A '${USERAGENT}' -L -O"
+DL_MANAGER=${CURL_DL}
 
 # print error and exit
 err()
@@ -119,6 +126,30 @@ clean()
   fi
 
   return $SUCCESS
+}
+
+
+# run function/s in parallel
+run_threaded()
+{
+  if [[ $(jobs -r -p | wc -l) -ge $THREADS_NUM ]]; then
+        wait -n
+    fi
+    (
+      eval $*
+    ) &
+}
+
+
+# check if number is valid
+valid_num()
+{
+  re='^[0-9]+$'
+  if [[ $1 =~ $re ]]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 
@@ -178,6 +209,7 @@ open_browser()
 # extract lsd-pl-exploits archives and do changes if necessary
 extract_lsdpl()
 {
+  wait
   unzip master.zip > ${DEBUG} 2>&1 ||
     warn "failed to extract lsd-pl-exploits ${f}"
 
@@ -198,6 +230,7 @@ extract_lsdpl()
 # extract m00-exploits archives and do changes if necessary
 extract_m00()
 {
+  wait
   tar xfvz m00-exploits.tar.gz > ${DEBUG} 2>&1 ||
     warn "failed to extract m00-exploits ${f}"
 
@@ -208,6 +241,7 @@ extract_m00()
 # extract packetstorm archives and do changes if necessary
 extract_pstorm()
 {
+  wait
   cd $PSTORM_DIR
 
   for f in *.tgz
@@ -276,9 +310,12 @@ update_pstorm()
   for i in `seq $next $today`
   do
     vmsg "downloading ${i}-exploits.tgz" > ${VERBOSE} 2>&1
-    curl -k -# -A "${USERAGENT}" -O "$i-exploits.tgz" > ${DEBUG} 2>&1 ||
-      err "failed to download packetstorm"
-    cd ../
+    # curl -k -# -A "${USERAGENT}" -O "$i-exploits.tgz" > ${DEBUG} 2>&1 ||
+    #   err "failed to download packetstorm"
+
+    run_threaded "${DL_MANAGER} $i-exploits.tgz" > ${DEBUG} 2>&1 || \
+                    err "failed to download packetstorm" \
+                    cd ../
   done
 
   extract_pstorm
@@ -295,9 +332,9 @@ update_exploitdb()
     cd "${EXPLOITDB_DIR}" || err "could not change to exploit-db dir"
     #git config user.email "foo@bar"
     #git config user.name "foo bar"
-    git stash > ${DEBUG} 2>&1
-    git pull > ${DEBUG} 2>&1
-    cd ..
+    run_threaded git stash > ${DEBUG} 2>&1 \
+                git pull > ${DEBUG} 2>&1 \
+                cd ..
   fi
 
   return $SUCCESS
@@ -348,8 +385,9 @@ fetch_lsdpl()
 {
   vmsg "downloading lsd-pl-exploits" > ${VERBOSE} 2>&1
 
-  curl -# -A "${USERAGENT}" -L -O "${LSDPL_URL}" > ${DEBUG} 2>&1 ||
-    err "failed to download lsd-pl-exploits"
+  # curl -# -A "${USERAGENT}" -L -O "${LSDPL_URL}" > ${DEBUG} 2>&1 || err "failed to download lsd-pl-exploits"
+
+  run_threaded "${DL_MANAGER} ${LSDPL_URL}" > ${DEBUG} 2>&1 || err "failed to download lsd-pl-exploits"
 
   return $SUCCESS
 }
@@ -361,8 +399,9 @@ fetch_m00()
 {
   vmsg "downloading m00-exploits" > ${VERBOSE} 2>&1
 
-  curl -# -A "${USERAGENT}" -L -O "${M00_URL}" > ${DEBUG} 2>&1 ||
-    err "failed to download m00-exploits"
+  # curl -# -A "${USERAGENT}" -L -O "${M00_URL}" > ${DEBUG} 2>&1 || err "failed to download m00-exploits"
+
+  run_threaded "${DL_MANAGER} ${M00_URL}" > ${DEBUG} 2>&1 || err "failed to download m00-exploits"
 
   return $SUCCESS
 }
@@ -397,9 +436,14 @@ fetch_pstorm()
         month="${m}"
       fi
       vmsg "downloading ${year}${month}-exploits.tgz" > ${VERBOSE} 2>&1
-      curl -k -# -A "${USERAGENT}" -O \
-        "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
-        > ${DEBUG} 2>&1 || err "failed to download packetstorm"
+
+      # curl -k -# -A "${USERAGENT}" -O \
+      #   "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
+      #   > ${DEBUG} 2>&1 || err "failed to download packetstorm"
+
+      run_threaded "${DL_MANAGER} ${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
+          > ${DEBUG} 2>&1 || err "failed to download packetstorm"
+
     done
     y=$((y+1))
   done
@@ -415,7 +459,7 @@ fetch_exploitdb()
 
   if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
   then
-    git clone https://github.com/offensive-security/exploit-database.git \
+    run_threaded git clone https://github.com/offensive-security/exploit-database.git \
       exploit-db > ${DEBUG} 2>&1
   fi
 
@@ -445,6 +489,8 @@ fetch()
   then
     fetch_lsdpl
   fi
+
+  wait
 
   return $SUCCESS
 }
@@ -527,12 +573,14 @@ usage()
   echo "              (default: http://dl.packetstormsecurity.com/)"
   echo "  -l <file> - give a new base path/file for website list option"
   echo "              (default: /usr/share/sploitctl/web/url.lst)"
+  echo "  -t <num>  - max download threads (default: 5)"
   echo "  -c        - do not delete downloaded archive files"
   echo "  -v        - verbose mode (default: off)"
   echo "  -d        - debug mode (default: off)"
   echo ""
   echo "misc:"
   echo ""
+  echo "  -W        - use wget for download"
   echo "  -V        - print version of sploitctl and exit"
   echo "  -H        - print this help and exit"
 
@@ -598,6 +646,10 @@ check_args()
     err "failed to get url file for web searching - try -l <file>"
   fi
 
+  if ! valid_num $THREADS_NUM; then
+    err "invalid threads number"
+  fi
+
   return $SUCCESS
 }
 
@@ -615,7 +667,7 @@ check_uid()
 # parse command line options
 get_opts()
 {
-  while getopts f:u:s:w:e:b:l:cvdVH flags
+  while getopts f:u:s:w:e:b:l:t:cvdWVH flags
   do
     case "${flags}" in
       f)
@@ -645,6 +697,9 @@ get_opts()
       l)
         URL_FILE="${OPTARG}"
         ;;
+      t)
+        THREADS_NUM=${OPTARG}
+        ;;
       c)
         CLEAN=$FALSE
         ;;
@@ -660,6 +715,9 @@ get_opts()
         ;;
       H)
         usage
+        ;;
+      W)
+        DL_MANAGER=${WGET_DL}
         ;;
       *)
         err "WTF?! mount /dev/brain"
