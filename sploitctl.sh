@@ -17,7 +17,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.0.7"
+VERSION="sploitctl.sh v2.1"
 
 # return codes
 SUCCESS=0
@@ -77,6 +77,7 @@ WGET_DL="wget -U '${USERAGENT}'"
 CURL_DL="curl -k -# -A '${USERAGENT}' -L -O"
 DL_MANAGER=${CURL_DL}
 
+
 # print error and exit
 err()
 {
@@ -134,11 +135,13 @@ clean()
 run_threaded()
 {
   if [[ $(jobs -r -p | wc -l) -ge $THREADS_NUM ]]; then
-        wait -n
-    fi
-    (
-      eval $*
-    ) &
+    wait -n
+  fi
+  (
+    eval $*
+  ) &
+
+  return $SUCCESS
 }
 
 
@@ -146,11 +149,14 @@ run_threaded()
 valid_num()
 {
   re='^[0-9]+$'
+
   if [[ $1 =~ $re ]]; then
     return 0
   else
     return 1
   fi
+
+  return $SUCCESS
 }
 
 
@@ -314,9 +320,9 @@ update_pstorm()
     # curl -k -# -A "${USERAGENT}" -O "$i-exploits.tgz" > ${DEBUG} 2>&1 ||
     #   err "failed to download packetstorm"
 
-    run_threaded "${DL_MANAGER} $i-exploits.tgz" > ${DEBUG} 2>&1 || \
-                    err "failed to download packetstorm" \
-                    cd ../
+    run_threaded "${DL_MANAGER} $i-exploits.tgz" > ${DEBUG} 2>&1 ||
+      err "failed to download packetstorm"
+    cd ../
   done
 
   extract_pstorm
@@ -334,8 +340,8 @@ update_exploitdb()
     #git config user.email "foo@bar"
     #git config user.name "foo bar"
     run_threaded git stash > ${DEBUG} 2>&1 \
-                git pull > ${DEBUG} 2>&1 \
-                cd ..
+      git pull > ${DEBUG} 2>&1
+    cd ..
   fi
 
   return $SUCCESS
@@ -388,7 +394,8 @@ fetch_lsdpl()
 
   # curl -# -A "${USERAGENT}" -L -O "${LSDPL_URL}" > ${DEBUG} 2>&1 || err "failed to download lsd-pl-exploits"
 
-  run_threaded "${DL_MANAGER} ${LSDPL_URL}" > ${DEBUG} 2>&1 || err "failed to download lsd-pl-exploits"
+  run_threaded "${DL_MANAGER} ${LSDPL_URL}" > ${DEBUG} 2>&1 ||
+    err "failed to download lsd-pl-exploits"
 
   return $SUCCESS
 }
@@ -402,7 +409,8 @@ fetch_m00()
 
   # curl -# -A "${USERAGENT}" -L -O "${M00_URL}" > ${DEBUG} 2>&1 || err "failed to download m00-exploits"
 
-  run_threaded "${DL_MANAGER} ${M00_URL}" > ${DEBUG} 2>&1 || err "failed to download m00-exploits"
+  run_threaded "${DL_MANAGER} ${M00_URL}" > ${DEBUG} 2>&1 ||
+    err "failed to download m00-exploits"
 
   return $SUCCESS
 }
@@ -443,8 +451,7 @@ fetch_pstorm()
       #   > ${DEBUG} 2>&1 || err "failed to download packetstorm"
 
       run_threaded "${DL_MANAGER} ${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
-          > ${DEBUG} 2>&1 || err "failed to download packetstorm"
-
+        > ${DEBUG} 2>&1 || err "failed to download packetstorm"
     done
     y=$((y+1))
   done
@@ -460,8 +467,9 @@ fetch_exploitdb()
 
   if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
   then
-    run_threaded git clone https://github.com/offensive-security/exploit-database.git \
-      exploit-db > ${DEBUG} 2>&1
+    run_threaded git clone \
+      https://github.com/offensive-security/exploit-database.git exploit-db \
+        > ${DEBUG} 2>&1
   fi
 
   return $SUCCESS
@@ -576,12 +584,12 @@ usage()
   echo "              (default: /usr/share/sploitctl/web/url.lst)"
   echo "  -t <num>  - max download threads (default: 5)"
   echo "  -c        - do not delete downloaded archive files"
+  echo "  -W        - use wget for download"
   echo "  -v        - verbose mode (default: off)"
   echo "  -d        - debug mode (default: off)"
   echo ""
   echo "misc:"
   echo ""
-  echo "  -W        - use wget for download"
   echo "  -V        - print version of sploitctl and exit"
   echo "  -H        - print this help and exit"
 
