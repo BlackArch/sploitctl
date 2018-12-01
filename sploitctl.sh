@@ -16,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.1.6"
+VERSION="sploitctl.sh v2.1.7"
 
 # return codes
 SUCCESS=0
@@ -32,7 +32,7 @@ VERBOSE="/dev/null"
 # debug mode - default: off
 DEBUG="/dev/null"
 
-# exploit base directory
+# default exploit base directory
 EXPLOIT_DIR="/usr/share/exploits"
 
 # exploit subdirectories
@@ -54,13 +54,16 @@ LSDPL_URL="https://github.com/BlackArch/lsd-pl-exploits/archive/master.zip"
 CLEAN=$TRUE
 
 # user agent string for curl
-USERAGENT="Mozilla/5.0 (Windows NT 10.0; WOW64; rv:63.0) Gecko/20180101 Firefox/63.0"
+USERAGENT='Mozilla/5.0 (Windows NT 10.0; WOW64; rv:63.0) Gecko/20180101 Firefox/63.0'
 
 # browser open url in web search option
 BROWSER="xdg-open" # allow for use of user defined default browser
 
 # default url list for web option
 URL_FILE="/usr/share/sploitctl/web/url.lst"
+
+# download agent
+DLAGENT="curl -k -# -L --create-dirs"
 
 
 # print error and exit
@@ -106,10 +109,13 @@ clean()
   then
     msg "deleting archive files"
     # Not defined by POSIX (SC2039). Read the commit message for details.
-    rm -rf "${EXPLOIT_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip}\
+    rm -rf "${EXPLOIT_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip} \
       > $DEBUG 2>&1
-    rm -rf "${PSTORM_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip}\
+    rm -rf packetstorm/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip} \
       > $DEBUG 2>&1
+    rm -rf m00/m00-exploits.tar.gz > $DEBUG 2>&1
+    rm -rf lsd-pl/lsd-pl-exploits-master > $DEBUG 2>&1
+    rm -rf lsd-pl/master.zip > $DEBUG 2>&1
   fi
 
   return $SUCCESS
@@ -172,24 +178,17 @@ open_browser()
 # extract lsd-pl-exploits archives and do changes if necessary
 extract_lsdpl()
 {
-  cd $LSDPL_DIR
-
   vmsg "extracting lsd-pl archive: master.zip" > $VERBOSE 2>&1
-  unzip master.zip > $DEBUG 2>&1 ||
+  unzip lsd-pl/master.zip -d lsd-pl/ > $DEBUG 2>&1 ||
     warn "failed to extract lsd-pl-exploits ${f}"
 
-  rm -rf lsd-pl-exploits > $DEBUG 2>&1
-  mv lsd-pl-exploits-master/* . > $DEBUG 2>&1
+  mv lsd-pl/lsd-pl-exploits-master/* lsd-pl/ > $DEBUG 2>&1
 
-  for zip in *.zip
+  for zip in lsd-pl/*.zip
   do
-    unzip "${zip}" > $DEBUG 2>&1
+    unzip "${zip}" -d lsd-pl/ > $DEBUG 2>&1
     rm -rf "${zip}" > $DEBUG 2>&1
   done
-
-  rm -rf lsd-pl-exploits-master > $DEBUG 2>&1
-
-  cd ../../
 
   return $SUCCESS
 }
@@ -198,17 +197,11 @@ extract_lsdpl()
 # extract m00-exploits archives and do changes if necessary
 extract_m00()
 {
-  cd $M00_DIR
-
   vmsg "extracting m00 archive: m00-exploits.tar.gz" > $VERBOSE 2>&1
-  tar xfvz m00-exploits.tar.gz > $DEBUG 2>&1 ||
-    warn "failed to extract m00-exploits ${f}"
-
-  mv m00-exploits/* . > $DEBUG 2>&1
-  rmdir m00-exploits > $DEBUG 2>&1
-  rm -rf m00-exploits.tar.gz
-
-  cd ../../
+  tar xfvz m00/*.tar.gz -C m00/ > $DEBUG 2>&1 ||
+    warn "failed to extract m00-exploits.tar.gz"
+  mv m00/m00-exploits/* m00/
+  rmdir m00/m00-exploits > $DEBUG 2>&1
 
   return $SUCCESS
 }
@@ -217,16 +210,13 @@ extract_m00()
 # extract packetstorm archives and do changes if necessary
 extract_pstorm()
 {
-  cd $PSTORM_DIR
-
-  for f in *.tgz
+  for f in packetstorm/*.tgz
   do
-    vmsg "extracting packetstorm archive: ${f}" > $VERBOSE 2>&1
-    tar xfvz "${f}" > $DEBUG 2>&1 ||
+    vmsg "extracting packetstorm archive: $(echo ${f} |
+      sed 's/packetstorm\///')" > $VERBOSE 2>&1
+    tar xfvz "${f}" -C packetstorm/ > $DEBUG 2>&1 ||
       warn "failed to extract packetstorm ${f}"
   done
-
-  cd ../../
 
   return $SUCCESS
 }
@@ -242,7 +232,9 @@ extract_exploitdb()
 # extract exploit archives
 extract()
 {
+  echo
   msg "extracting exploit archives"
+  echo
 
   case $site in
     0)
@@ -278,23 +270,24 @@ extract()
 # update packetstorm archive
 update_pstorm()
 {
-  cd $PSTORM_DIR
+  cd $EXPLOIT_DIR
 
   today=$(date +%y%m)
-  last=$(find . -type d | cut -d '-' -f 1 | tr -d './' | sort -u | tail -1)
+  last=$(find . -type d | cut -d '-' -f 1 | tr -d './' | sort -u | tail -1 |
+    sed 's/packetstorm//')
   next=$(expr $last + 1)
 
-  for i in `seq $next $today`
+  for i in $(seq $next $today)
   do
-    vmsg "downloading ${i}-exploits.tgz" > $VERBOSE 2>&1
-    curl -k -# -A "${USERAGENT}" -O "$i-exploits.tgz" > $DEBUG 2>&1 ||
+    vmsg "downloading $i-exploits.tgz" > $VERBOSE 2>&1
+    $DLAGENT -A "$USERAGENT" -o "packetstorm/$i-exploits.tgz" \
+      "$PSTORM_URL/$i-exploits/$i-exploits.tgz" > $DEBUG 2>&1 ||
       err "failed to download packetstorm"
-    cd ../
   done
 
-  cd ../../
-
   extract_pstorm
+
+  cd ..
 
   return $SUCCESS
 }
@@ -305,7 +298,7 @@ update_exploitdb()
 {
   if [ -f "${EXPLOITDB_DIR}/files_exploits.csv" ]
   then
-    cd "${EXPLOITDB_DIR}" || err "could not change to exploit-db dir"
+    cd exploit-db || err "could not change to exploit-db dir"
     #git config user.email "foo@bar"
     #git config user.name "foo bar"
     git stash > $DEBUG 2>&1
@@ -346,6 +339,7 @@ update()
 # fix file permissions
 fix_perms()
 {
+  echo
   msg "fixing permissions"
 
   find "${EXPLOIT_DIR}" -type d -exec chmod 755 {} \; > $DEBUG 2>&1
@@ -361,12 +355,8 @@ fetch_lsdpl()
 {
   vmsg "downloading lsd-pl-exploits" > $VERBOSE 2>&1
 
-  cd $LSDPL_DIR
-
-  curl -# -A "${USERAGENT}" -L -O "${LSDPL_URL}" > $DEBUG 2>&1 ||
-    err "failed to download lsd-pl-exploits"
-
-  cd ../../
+  $DLAGENT -A "$USERAGENT" "${LSDPL_URL}" -o "lsd-pl/master.zip" \
+    > $DEBUG 2>&1 || err "failed to download lsd-pl-exploits"
 
   return $SUCCESS
 }
@@ -378,12 +368,8 @@ fetch_m00()
 {
   vmsg "downloading m00-exploits" > $VERBOSE 2>&1
 
-  cd $M00_DIR
-
-  curl -# -A "${USERAGENT}" -L -O "${M00_URL}" > $DEBUG 2>&1 ||
-    err "failed to download m00-exploits"
-
-  cd ../../
+  $DLAGENT -A "$USERAGENT" "${M00_URL}" -o "m00/m00-exploits.tar.gz" \
+    > $DEBUG 2>&1 || err "failed to download m00-exploits"
 
   return $SUCCESS
 }
@@ -398,8 +384,6 @@ fetch_pstorm()
   y=0
 
   vmsg "downloading archives from packetstorm" > $VERBOSE 2>&1
-
-  cd $PSTORM_DIR
 
   while [ "${y}" -le "${cur_year}" ]
   do
@@ -418,14 +402,13 @@ fetch_pstorm()
         month="${m}"
       fi
       vmsg "downloading ${year}${month}-exploits.tgz" > $VERBOSE 2>&1
-      curl -k -# -A "${USERAGENT}" -O \
+      $DLAGENT -A "$USERAGENT" \
         "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
-        > $DEBUG 2>&1 || err "failed to download packetstorm"
+        -o "packetstorm/${year}${month}-exploits.tgz" > $DEBUG 2>&1 ||
+        err "failed to download packetstorm"
     done
     y=$((y+1))
   done
-
-  cd ../../
 
   return $SUCCESS
 }
@@ -436,15 +419,11 @@ fetch_exploitdb()
 {
   vmsg "downloading archive from exploit-db" > $VERBOSE 2>&1
 
-  cd $EXPLOITDB_DIR
-
   if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
   then
-    git clone https://github.com/offensive-security/exploit-database.git . \
-      > $DEBUG 2>&1
+    git clone https://github.com/offensive-security/exploit-database.git \
+      exploit-db > $DEBUG 2>&1
   fi
-
-  cd ../../
 
   return $SUCCESS
 }
@@ -481,8 +460,8 @@ fetch()
 }
 
 
-# define and create exploit dirs for each site
-make_exploit_dirs()
+# create parent exploit dir and cd into it
+make_exploit_dir()
 {
   if [ ! -d "${EXPLOIT_DIR}" ]
   then
@@ -491,28 +470,8 @@ make_exploit_dirs()
       err "failed to create ${EXPLOIT_DIR}"
     fi
   fi
-  if [ ! -d "${EXPLOITDB_DIR}" ]
-  then
-     mkdir "${EXPLOITDB_DIR}" > $DEBUG 2>&1 ||
-      err "failed to create ${EXPLOITDB_DIR}"
-  fi
-  if [ ! -d "${PSTORM_DIR}" ]
-  then
-     mkdir "${PSTORM_DIR}" > $DEBUG 2>&1 ||
-      err "failed to create ${PSTORM_DIR}"
-  fi
-  if [ ! -d "${M00_DIR}" ]
-  then
-     mkdir "${M00_DIR}" > $DEBUG 2>&1 ||
-      err "failed to create ${M00_DIR}"
-  fi
-  if [ ! -d "${LSDPL_DIR}" ]
-  then
-     mkdir "${LSDPL_DIR}" > $DEBUG 2>&1 ||
-      err "failed to create ${LSDPL_DIR}"
-  fi
 
-  #cd "${EXPLOIT_DIR}" || return $FAILURE
+  cd $EXPLOIT_DIR
 
   return $SUCCESS
 }
@@ -669,10 +628,6 @@ get_opts()
         ;;
       e)
         EXPLOIT_DIR="${OPTARG}"
-        EXPLOITDB_DIR="${EXPLOIT_DIR}/exploit-db"
-        PSTORM_DIR="${EXPLOIT_DIR}/packetstorm"
-        M00_DIR="${EXPLOIT_DIR}/m00-exploits"
-        LSDPL_DIR="${EXPLOIT_DIR}/lsd-pl-exploits"
         ;;
       b)
         PSTORM_URL="${OPTARG}"
@@ -718,7 +673,7 @@ main()
   case "${job}" in
     "fetch")
       check_old_expl_dir
-      make_exploit_dirs
+      make_exploit_dir
       fetch
       extract
       fix_perms
