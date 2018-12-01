@@ -16,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.1.5"
+VERSION="sploitctl.sh v2.1.6"
 
 # return codes
 SUCCESS=0
@@ -174,6 +174,7 @@ extract_lsdpl()
 {
   cd $LSDPL_DIR
 
+  vmsg "extracting lsd-pl archive: master.zip" > $VERBOSE 2>&1
   unzip master.zip > $DEBUG 2>&1 ||
     warn "failed to extract lsd-pl-exploits ${f}"
 
@@ -199,6 +200,7 @@ extract_m00()
 {
   cd $M00_DIR
 
+  vmsg "extracting m00 archive: m00-exploits.tar.gz" > $VERBOSE 2>&1
   tar xfvz m00-exploits.tar.gz > $DEBUG 2>&1 ||
     warn "failed to extract m00-exploits ${f}"
 
@@ -219,7 +221,7 @@ extract_pstorm()
 
   for f in *.tgz
   do
-    vmsg "extracting ${f}" > $VERBOSE 2>&1
+    vmsg "extracting packetstorm archive: ${f}" > $VERBOSE 2>&1
     tar xfvz "${f}" > $DEBUG 2>&1 ||
       warn "failed to extract packetstorm ${f}"
   done
