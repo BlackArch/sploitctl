@@ -17,7 +17,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.1"
+VERSION="sploitctl.sh v2.1.1"
 
 # return codes
 SUCCESS=0
