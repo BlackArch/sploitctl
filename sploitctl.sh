@@ -16,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.1.2"
+VERSION="sploitctl.sh v2.1.3"
 
 # return codes
 SUCCESS=0
@@ -60,7 +60,7 @@ CLEAN=$TRUE
 
 # user agent string for curl
 #USERAGENT="blackarch/${VERSION}"
-USERAGENT="Mozilla/5.0 (Windows NT 10.0; WOW64; rv:61.0) Gecko/20180101 Firefox/61.0.1"
+USERAGENT="Mozilla/5.0 (Windows NT 10.0; WOW64; rv:63.0) Gecko/20180101 Firefox/63.0"
 
 # browser open url in web search option
 BROWSER="xdg-open" # allow for use of user defined default browser
@@ -429,22 +429,26 @@ fetch()
   msg "downloading exploit archives"
   echo
 
-  if [ "${site}" -eq 0 ] || [ "${site}" -eq 1 ]
-  then
-    fetch_exploitdb
-  fi
-  if [ "${site}" -eq 0 ] || [ "${site}" -eq 2 ]
-  then
-    fetch_pstorm
-  fi
-  if [ "${site}" -eq 0 ] || [ "${site}" -eq 3 ]
-  then
-    fetch_m00
-  fi
-  if [ "${site}" -eq 0 ] || [ "${site}" -eq 4 ]
-  then
-    fetch_lsdpl
-  fi
+  case $site in
+    0)
+      fetch_exploitdb
+      fetch_pstorm
+      fetch_m00
+      fetch_lsdpl
+      ;;
+    1)
+      fetch_exploitdb
+      ;;
+    2)
+      fetch_pstorm
+      ;;
+    3)
+      fetch_m00
+      ;;
+    4)
+      fetch_lsdpl
+      ;;
+  esac
 
   return $SUCCESS
 }
