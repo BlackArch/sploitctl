@@ -16,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.1.4"
+VERSION="sploitctl.sh v2.1.5"
 
 # return codes
 SUCCESS=0
@@ -438,9 +438,8 @@ fetch_exploitdb()
 
   if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
   then
-    echo
-    #git clone https://github.com/offensive-security/exploit-database.git \
-      #exploit-db > $DEBUG 2>&1
+    git clone https://github.com/offensive-security/exploit-database.git . \
+      > $DEBUG 2>&1
   fi
 
   cd ../../
