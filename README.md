@@ -34,12 +34,12 @@ options:
               (default: /usr/share/sploitctl/web/url.lst)
   -t <num>  - max download threads (default: 5)
   -c        - do not delete downloaded archive files
+  -W        - use wget for download
   -v        - verbose mode (default: off)
   -d        - debug mode (default: off)
 
 misc:
 
-  -W        - use wget for download
   -V        - print version of sploitctl and exit
   -H        - print this help and exit
 ```
