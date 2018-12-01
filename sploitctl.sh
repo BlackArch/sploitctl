@@ -16,7 +16,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.1.3"
+VERSION="sploitctl.sh v2.1.4"
 
 # return codes
 SUCCESS=0
@@ -41,12 +41,7 @@ PSTORM_DIR="${EXPLOIT_DIR}/packetstorm"
 M00_DIR="${EXPLOIT_DIR}/m00-exploits"
 LSDPL_DIR="${EXPLOIT_DIR}/lsd-pl-exploits"
 
-# link to exploit-db's exploit archive
-# EXPLOITDB_URL="http://www.exploit-db.com/archive.tar.bz2"
-
 # default base url for packetstorm
-#PSTORM_URL="http://packetstorm.foofus.com/"
-#PSTORM_URL="http://packetstorm.wowhacker.com/"
 PSTORM_URL="https://dl.packetstormsecurity.net/"
 
 # link to m00 exploits archive
@@ -59,7 +54,6 @@ LSDPL_URL="https://github.com/BlackArch/lsd-pl-exploits/archive/master.zip"
 CLEAN=$TRUE
 
 # user agent string for curl
-#USERAGENT="blackarch/${VERSION}"
 USERAGENT="Mozilla/5.0 (Windows NT 10.0; WOW64; rv:63.0) Gecko/20180101 Firefox/63.0"
 
 # browser open url in web search option
@@ -178,18 +172,23 @@ open_browser()
 # extract lsd-pl-exploits archives and do changes if necessary
 extract_lsdpl()
 {
+  cd $LSDPL_DIR
+
   unzip master.zip > $DEBUG 2>&1 ||
     warn "failed to extract lsd-pl-exploits ${f}"
 
   rm -rf lsd-pl-exploits > $DEBUG 2>&1
-  mv lsd-pl-exploits-master lsd-pl-exploits > $DEBUG 2>&1
+  mv lsd-pl-exploits-master/* . > $DEBUG 2>&1
 
-  cd lsd-pl-exploits > $DEBUG 2>&1 || err "could not change to lsd-pl dir"
   for zip in *.zip
   do
     unzip "${zip}" > $DEBUG 2>&1
     rm -rf "${zip}" > $DEBUG 2>&1
   done
+
+  rm -rf lsd-pl-exploits-master > $DEBUG 2>&1
+
+  cd ../../
 
   return $SUCCESS
 }
@@ -198,8 +197,16 @@ extract_lsdpl()
 # extract m00-exploits archives and do changes if necessary
 extract_m00()
 {
+  cd $M00_DIR
+
   tar xfvz m00-exploits.tar.gz > $DEBUG 2>&1 ||
     warn "failed to extract m00-exploits ${f}"
+
+  mv m00-exploits/* . > $DEBUG 2>&1
+  rmdir m00-exploits > $DEBUG 2>&1
+  rm -rf m00-exploits.tar.gz
+
+  cd ../../
 
   return $SUCCESS
 }
@@ -216,6 +223,8 @@ extract_pstorm()
     tar xfvz "${f}" > $DEBUG 2>&1 ||
       warn "failed to extract packetstorm ${f}"
   done
+
+  cd ../../
 
   return $SUCCESS
 }
@@ -280,6 +289,8 @@ update_pstorm()
       err "failed to download packetstorm"
     cd ../
   done
+
+  cd ../../
 
   extract_pstorm
 
@@ -348,8 +359,12 @@ fetch_lsdpl()
 {
   vmsg "downloading lsd-pl-exploits" > $VERBOSE 2>&1
 
+  cd $LSDPL_DIR
+
   curl -# -A "${USERAGENT}" -L -O "${LSDPL_URL}" > $DEBUG 2>&1 ||
     err "failed to download lsd-pl-exploits"
+
+  cd ../../
 
   return $SUCCESS
 }
@@ -361,8 +376,12 @@ fetch_m00()
 {
   vmsg "downloading m00-exploits" > $VERBOSE 2>&1
 
+  cd $M00_DIR
+
   curl -# -A "${USERAGENT}" -L -O "${M00_URL}" > $DEBUG 2>&1 ||
     err "failed to download m00-exploits"
+
+  cd ../../
 
   return $SUCCESS
 }
@@ -404,6 +423,8 @@ fetch_pstorm()
     y=$((y+1))
   done
 
+  cd ../../
+
   return $SUCCESS
 }
 
@@ -413,11 +434,16 @@ fetch_exploitdb()
 {
   vmsg "downloading archive from exploit-db" > $VERBOSE 2>&1
 
+  cd $EXPLOITDB_DIR
+
   if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
   then
-    git clone https://github.com/offensive-security/exploit-database.git \
-      exploit-db > $DEBUG 2>&1
+    echo
+    #git clone https://github.com/offensive-security/exploit-database.git \
+      #exploit-db > $DEBUG 2>&1
   fi
+
+  cd ../../
 
   return $SUCCESS
 }
@@ -485,7 +511,7 @@ make_exploit_dirs()
       err "failed to create ${LSDPL_DIR}"
   fi
 
-  cd "${EXPLOIT_DIR}" || return $FAILURE
+  #cd "${EXPLOIT_DIR}" || return $FAILURE
 
   return $SUCCESS
 }
@@ -642,6 +668,10 @@ get_opts()
         ;;
       e)
         EXPLOIT_DIR="${OPTARG}"
+        EXPLOITDB_DIR="${EXPLOIT_DIR}/exploit-db"
+        PSTORM_DIR="${EXPLOIT_DIR}/packetstorm"
+        M00_DIR="${EXPLOIT_DIR}/m00-exploits"
+        LSDPL_DIR="${EXPLOIT_DIR}/lsd-pl-exploits"
         ;;
       b)
         PSTORM_URL="${OPTARG}"
