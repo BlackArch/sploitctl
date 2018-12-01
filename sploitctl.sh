@@ -330,7 +330,7 @@ update_pstorm()
     # curl -k -# -A "${USERAGENT}" -O "$i-exploits.tgz" > $DEBUG 2>&1 ||
     #   err "failed to download packetstorm"
 
-    run_threaded "${DL_MANAGER} $i-exploits.tgz" > $DEBUG 2>&1 ||
+    ${DL_MANAGER} "$i-exploits.tgz" > $DEBUG 2>&1 ||
       err "failed to download packetstorm"
     cd ../
   done
@@ -468,7 +468,7 @@ fetch_pstorm()
       #   "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
       #   > $DEBUG 2>&1 || err "failed to download packetstorm"
 
-      run_threaded "${DL_MANAGER} ${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
+      ${DL_MANAGER} "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
         > $DEBUG 2>&1 || err "failed to download packetstorm"
     done
     y=$((y+1))
