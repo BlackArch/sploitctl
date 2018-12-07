@@ -12,11 +12,12 @@
 # teitelmanevan@gmail.com                                                      #
 # nrz@nullsecurity.net                                                         #
 # kurobeats@outlook.com                                                        #
+# sepehrdad.dev@gmail.com                                                      #
 #                                                                              #
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.1.7"
+VERSION="sploitctl.sh v2.1.8"
 
 # return codes
 SUCCESS=0
@@ -65,11 +66,22 @@ URL_FILE="/usr/share/sploitctl/web/url.lst"
 # download agent
 DLAGENT="curl -k -# -L --create-dirs"
 
+# default Threads number
+THREADS_NUM=5
+
+
+# colors
+GREEN="$(tput setaf 2)"
+RED="$(tput setaf 1)"
+REDB="$(tput bold; tput setaf 1)"
+YELLOW="$(tput setaf 3)"
+NC="$(tput sgr0)"
+
 
 # print error and exit
 err()
 {
-  echo "[-] ERROR: ${@}"
+  echo "${RED}[-] ERROR:${NC} ${@}"
 
   exit $FAILURE
 }
@@ -78,7 +90,7 @@ err()
 # print warning
 warn()
 {
-  echo "[!] WARNING: ${@}"
+  echo "${YELLOW}[!] WARNING:${NC} ${@}"
 
   return $SUCCESS
 }
@@ -96,7 +108,7 @@ vmsg()
 # print message
 msg()
 {
-  echo "[+] ${@}"
+  echo "${GREEN}[+]${NC} ${@}"
 
   return $SUCCESS
 }
@@ -119,6 +131,28 @@ clean()
   fi
 
   return $SUCCESS
+}
+
+# run function/s in parallel
+run_threaded()
+{
+  if [[ $(jobs -r -p | wc -l) -ge $THREADS_NUM ]]; then
+        wait -n
+    fi
+    (
+      eval $*
+    ) &
+}
+
+# check if number is valid
+valid_num()
+{
+  re='^[0-9]+$'
+  if [[ $1 =~ $re ]]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 
@@ -355,7 +389,7 @@ fetch_lsdpl()
 {
   vmsg "downloading lsd-pl-exploits" > $VERBOSE 2>&1
 
-  $DLAGENT -A "$USERAGENT" "${LSDPL_URL}" -o "lsd-pl/master.zip" \
+  run_threaded "$DLAGENT -A \"$USERAGENT\" \"${LSDPL_URL}\" -o lsd-pl/master.zip" \
     > $DEBUG 2>&1 || err "failed to download lsd-pl-exploits"
 
   return $SUCCESS
@@ -368,7 +402,7 @@ fetch_m00()
 {
   vmsg "downloading m00-exploits" > $VERBOSE 2>&1
 
-  $DLAGENT -A "$USERAGENT" "${M00_URL}" -o "m00/m00-exploits.tar.gz" \
+  run_threaded "$DLAGENT -A \"$USERAGENT\" \"${M00_URL}\" -o m00/m00-exploits.tar.gz" \
     > $DEBUG 2>&1 || err "failed to download m00-exploits"
 
   return $SUCCESS
@@ -402,9 +436,9 @@ fetch_pstorm()
         month="${m}"
       fi
       vmsg "downloading ${year}${month}-exploits.tgz" > $VERBOSE 2>&1
-      $DLAGENT -A "$USERAGENT" \
-        "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
-        -o "packetstorm/${year}${month}-exploits.tgz" > $DEBUG 2>&1 ||
+      run_threaded "$DLAGENT -A \"$USERAGENT\" \
+        \"${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz\" \
+        -o packetstorm/${year}${month}-exploits.tgz" > $DEBUG 2>&1 || \
         err "failed to download packetstorm"
     done
     y=$((y+1))
@@ -421,8 +455,8 @@ fetch_exploitdb()
 
   if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
   then
-    git clone https://github.com/offensive-security/exploit-database.git \
-      exploit-db > $DEBUG 2>&1
+    run_threaded "git clone https://github.com/offensive-security/exploit-database.git \
+      exploit-db" > $DEBUG 2>&1
   fi
 
   return $SUCCESS
@@ -455,6 +489,8 @@ fetch()
       fetch_lsdpl
       ;;
   esac
+
+  wait
 
   return $SUCCESS
 }
@@ -517,6 +553,7 @@ usage()
   echo "              (default: http://dl.packetstormsecurity.com/)"
   echo "  -l <file> - give a new base path/file for website list option"
   echo "              (default: /usr/share/sploitctl/web/url.lst)"
+  echo "  -t <num>  - max download threads (default: ${THREADS_NUM})"
   echo "  -c        - do not delete downloaded archive files"
   echo "  -v        - verbose mode (default: off)"
   echo "  -d        - debug mode (default: off)"
@@ -533,7 +570,7 @@ usage()
 # leet banner, very important
 banner()
 {
-  echo "--==[ sploitctl.sh by blackarch.org ]==--"
+  echo "${REDB}--==[ sploitctl.sh by blackarch.org ]==--${NC}"
   echo
 
   return $SUCCESS
@@ -588,6 +625,10 @@ check_args()
     err "failed to get url file for web searching - try -l <file>"
   fi
 
+  if ! valid_num $THREADS_NUM; then
+    err "invalid threads number"
+  fi
+
   return $SUCCESS
 }
 
@@ -605,7 +646,7 @@ check_uid()
 # parse command line options
 get_opts()
 {
-  while getopts f:u:s:w:e:b:l:cvdVH flags
+  while getopts f:u:s:w:e:b:l:t:cvdWVH flags
   do
     case "${flags}" in
       f)
@@ -634,6 +675,9 @@ get_opts()
         ;;
       l)
         URL_FILE="${OPTARG}"
+        ;;
+      t)
+        THREADS_NUM=${OPTARG}
         ;;
       c)
         CLEAN=$FALSE
