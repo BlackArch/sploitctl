@@ -32,7 +32,6 @@ options:
               (default: http://dl.packetstormsecurity.com/)
   -l <file> - give a new base path/file for website list option
               (default: /usr/share/sploitctl/web/url.lst)
-  -t <num>  - max download threads (default: 5)
   -c        - do not delete downloaded archive files
   -v        - verbose mode (default: off)
   -d        - debug mode (default: off)
