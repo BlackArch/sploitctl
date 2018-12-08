@@ -137,11 +137,9 @@ clean()
 run_threaded()
 {
   if [[ $(jobs -r -p | wc -l) -ge $THREADS_NUM ]]; then
-        wait -n
-    fi
-    (
-      eval $*
-    ) &
+    wait -n
+  fi
+  (eval $*) &
 }
 
 # check if number is valid
@@ -389,7 +387,7 @@ fetch_lsdpl()
 {
   vmsg "downloading lsd-pl-exploits" > $VERBOSE 2>&1
 
-  run_threaded "$DLAGENT -A \"$USERAGENT\" \"${LSDPL_URL}\" -o lsd-pl/master.zip" \
+  $DLAGENT -A "$USERAGENT" "${LSDPL_URL}" -o lsd-pl/master.zip \
     > $DEBUG 2>&1 || err "failed to download lsd-pl-exploits"
 
   return $SUCCESS
@@ -402,7 +400,7 @@ fetch_m00()
 {
   vmsg "downloading m00-exploits" > $VERBOSE 2>&1
 
-  run_threaded "$DLAGENT -A \"$USERAGENT\" \"${M00_URL}\" -o m00/m00-exploits.tar.gz" \
+  $DLAGENT -A "$USERAGENT" "${M00_URL}" -o m00/m00-exploits.tar.gz \
     > $DEBUG 2>&1 || err "failed to download m00-exploits"
 
   return $SUCCESS
@@ -436,9 +434,9 @@ fetch_pstorm()
         month="${m}"
       fi
       vmsg "downloading ${year}${month}-exploits.tgz" > $VERBOSE 2>&1
-      run_threaded "$DLAGENT -A \"$USERAGENT\" \
-        \"${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz\" \
-        -o packetstorm/${year}${month}-exploits.tgz" > $DEBUG 2>&1 || \
+      $DLAGENT -A "$USERAGENT" \
+        "${PSTORM_URL}/${year}${month}-exploits/${year}${month}-exploits.tgz" \
+        -o packetstorm/${year}${month}-exploits.tgz > $DEBUG 2>&1 || \
         err "failed to download packetstorm"
     done
     y=$((y+1))
@@ -455,8 +453,8 @@ fetch_exploitdb()
 
   if [ ! -f "${EXPLOITDB_DIR}/files.csv" ]
   then
-    run_threaded "git clone https://github.com/offensive-security/exploit-database.git \
-      exploit-db" > $DEBUG 2>&1
+    git clone https://github.com/offensive-security/exploit-database.git \
+      exploit-db > $DEBUG 2>&1
   fi
 
   return $SUCCESS
@@ -490,7 +488,7 @@ fetch()
       ;;
   esac
 
-  wait
+  #wait
 
   return $SUCCESS
 }
@@ -553,7 +551,7 @@ usage()
   echo "              (default: http://dl.packetstormsecurity.com/)"
   echo "  -l <file> - give a new base path/file for website list option"
   echo "              (default: /usr/share/sploitctl/web/url.lst)"
-  echo "  -t <num>  - max download threads (default: ${THREADS_NUM})"
+#  echo "  -t <num>  - max download threads (default: ${THREADS_NUM})"
   echo "  -c        - do not delete downloaded archive files"
   echo "  -v        - verbose mode (default: off)"
   echo "  -d        - debug mode (default: off)"
