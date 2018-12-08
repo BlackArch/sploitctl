@@ -17,7 +17,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.1.8"
+VERSION="sploitctl.sh v2.1.9"
 
 # return codes
 SUCCESS=0
@@ -81,7 +81,7 @@ NC="$(tput sgr0)"
 # print error and exit
 err()
 {
-  echo "${RED}[-] ERROR:${NC} ${@}"
+  echo "${RED}[-]${NC} ERROR: ${@}"
 
   exit $FAILURE
 }
@@ -90,7 +90,7 @@ err()
 # print warning
 warn()
 {
-  echo "${YELLOW}[!] WARNING:${NC} ${@}"
+  echo "${YELLOW}[!]${NC} WARNING: ${@}"
 
   return $SUCCESS
 }
