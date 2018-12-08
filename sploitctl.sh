@@ -580,7 +580,7 @@ check_site()
 {
   if [ "${site}" = "?" ]
   then
-    msg "available exploit sites"
+    msg "available exploit sites:"
     vmsg "0   - all exploit sites"
     vmsg "1   - exploit-db.com"
     vmsg "2   - packetstormsecurity.org"
