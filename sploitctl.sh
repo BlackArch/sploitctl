@@ -17,7 +17,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.2.0"
+VERSION="sploitctl.sh v2.2.1"
 
 # return codes
 SUCCESS=0
@@ -330,7 +330,7 @@ update_exploitdb()
 {
   if [ -f "${EXPLOITDB_DIR}/files_exploits.csv" ]
   then
-    cd exploit-db || err "could not change to exploit-db dir"
+    cd $EXPLOITDB_DIR || err "could not change to exploit-db dir"
     #git config user.email "foo@bar"
     #git config user.name "foo bar"
     git stash > $DEBUG 2>&1
