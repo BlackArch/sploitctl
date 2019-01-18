@@ -123,11 +123,17 @@ clean()
     # Not defined by POSIX (SC2039). Read the commit message for details.
     rm -rf "${EXPLOIT_DIR}"/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip} \
       > $DEBUG 2>&1
+    rm -rf $PSTORM_DIR/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip} \
+      > $DEBUG 2>&1
+    rm -rf $M00_DIR/m00-exploits.tar.gz > $DEBUG 2>&1
+    rm -rf $LSDPL_DIR/lsd-pl-exploits-master > $DEBUG 2>&1
+    rm -rf $LSDPL_DIR/master.zip > $DEBUG 2>&1
     rm -rf packetstorm/{*.tar,*.tgz,*.tar.gz,*.tar.bz2,*.tar.xz,*.zip} \
       > $DEBUG 2>&1
     rm -rf m00/m00-exploits.tar.gz > $DEBUG 2>&1
     rm -rf lsd-pl/lsd-pl-exploits-master > $DEBUG 2>&1
     rm -rf lsd-pl/master.zip > $DEBUG 2>&1
+
   fi
 
   return $SUCCESS
