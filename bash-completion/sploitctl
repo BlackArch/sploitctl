@@ -1,6 +1,6 @@
 # Attention: this is a Bash Script, not `sh`.
 
-#_sploitctl_options="-f <num>  - download and extract exploit archives from chosen.
+#_sploitctl_options="-f <num>  - download and extract exploit archives from chosen. Use '?' to list sites.
 #-u <num>  - update exploit archive from chosen site. Use '?' to list sites.
 #-s <str>  - exploit to search using <str> in exploit directory.
 #-w <str>  - exploit to search in web exploit site.

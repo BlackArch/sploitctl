@@ -24,7 +24,8 @@ options:
 
   -f <num>  - download and extract exploit archives from chosen sites
             - ? to list sites
-  -u <num>  - update exploit archive from chosen site - ? to list sites
+  -u <num>  - update exploit archive from chosen site
+            - ? to list sites
   -s <str>  - exploit to search using <str> in /usr/share/exploits
   -w <str>  - exploit to search in web exploit site
   -e <dir>  - exploits base directory (default: /usr/share/exploits)
