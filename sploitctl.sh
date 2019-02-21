@@ -17,7 +17,7 @@
 ################################################################################
 
 # sploitctl.sh version
-VERSION="sploitctl.sh v2.2.0"
+VERSION="sploitctl.sh v2.2.1"
 
 # return codes
 SUCCESS=0
@@ -65,9 +65,6 @@ URL_FILE="/usr/share/sploitctl/web/url.lst"
 
 # download agent
 DLAGENT="curl -k -# -L --create-dirs"
-
-# default Threads number
-THREADS_NUM=5
 
 
 # colors
@@ -131,26 +128,6 @@ clean()
   fi
 
   return $SUCCESS
-}
-
-# run function/s in parallel
-run_threaded()
-{
-  if [[ $(jobs -r -p | wc -l) -ge $THREADS_NUM ]]; then
-    wait -n
-  fi
-  (eval $*) &
-}
-
-# check if number is valid
-valid_num()
-{
-  re='^[0-9]+$'
-  if [[ $1 =~ $re ]]; then
-    return 0
-  else
-    return 1
-  fi
 }
 
 
@@ -543,7 +520,8 @@ usage()
   echo ""
   echo "  -f <num>  - download and extract exploit archives from chosen sites"
   echo "            - ? to list sites"
-  echo "  -u <num>  - update exploit archive from chosen site - ? to list sites"
+  echo "  -u <num>  - update exploit archive from chosen site"
+  echo "            - ? to list sites"
   echo "  -s <str>  - exploit to search using <str> in ${EXPLOIT_DIR}"
   echo "  -w <str>  - exploit to search in web exploit site"
   echo "  -e <dir>  - exploits base directory (default: /usr/share/exploits)"
@@ -551,7 +529,6 @@ usage()
   echo "              (default: http://dl.packetstormsecurity.com/)"
   echo "  -l <file> - give a new base path/file for website list option"
   echo "              (default: /usr/share/sploitctl/web/url.lst)"
-#  echo "  -t <num>  - max download threads (default: ${THREADS_NUM})"
   echo "  -c        - do not delete downloaded archive files"
   echo "  -v        - verbose mode (default: off)"
   echo "  -d        - debug mode (default: off)"
@@ -624,10 +601,6 @@ check_args()
     err "failed to get url file for web searching - try -l <file>"
   fi
 
-  if ! valid_num $THREADS_NUM; then
-    err "invalid threads number"
-  fi
-
   return $SUCCESS
 }
 
@@ -645,7 +618,7 @@ check_uid()
 # parse command line options
 get_opts()
 {
-  while getopts f:u:s:w:e:b:l:t:cvdWVH flags
+  while getopts f:u:s:w:e:b:l:cvdWVH flags
   do
     case "${flags}" in
       f)
@@ -674,9 +647,6 @@ get_opts()
         ;;
       l)
         URL_FILE="${OPTARG}"
-        ;;
-      t)
-        THREADS_NUM=${OPTARG}
         ;;
       c)
         CLEAN=$FALSE

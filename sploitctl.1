@@ -1,0 +1,40 @@
+.TH "SPLOITCTL" "1" "" "" ""
+.SH NAME
+.PP
+sploitctl \- fetch, install and search exploit archives from exploit sites
+.SH SYNOPSIS
+.PP
+sploitctl.sh \fB\-f\fR <arg> | \fB\-u\fR <arg> | \fB\-s\fR <arg> | \fB\-e\fR <arg> [options] | <misc>
+.SH DESCRIPTION
+.PP
+Script to fetch, install, update and search exploit archives from well-known sites like packetstormsecurity.org and exploit-db.com.
+.SH OPTIONS
+.PP
+.HP
+\fB\-f\fR <num>   \- download and extract exploit archives from chosen sites
+.IP
+    \- ? to list sites
+.HP
+\fB\-u\fR <num>   \- update exploit archive from chosen site 
+.IP
+    \- ? to list sites
+.HP
+\fB\-s\fR <str>   \- exploit to search using <str> in /usr/share/exploits
+.HP
+\fB\-w\fR <str>   \- exploit to search in web exploit site
+.HP
+\fB\-e\fR <dir>   \- exploits base directory (default: /usr/share/exploits)
+.HP
+\fB\-b\fR <url>   \- give a new base url for packetstorm (default: http://dl.packetstormsecurity.com/)
+.HP
+\fB\-l\fR <file>   \- give a new base path/file for website list option (default: /usr/share/sploitctl/web/url.lst)
+.HP
+\fB\-c\fR <file>   \- do not delete downloaded archive files
+.HP
+\fB\-v\fR <file>   \- verbose mode (default: off)
+.HP
+\fB\-d\fR <file>   \- debug mode (default: off)
+.HP
+\fB\-V\fR <file>   \- print version of sploitctl and exit
+.HP
+\fB\-H\fR <file>   \- print help and exit
