@@ -55,7 +55,7 @@ LSDPL_URL="https://github.com/BlackArch/lsd-pl-exploits/archive/master.zip"
 CLEAN=$TRUE
 
 # user agent string for curl
-USERAGENT='Mozilla/5.0 (Windows NT 10.0; WOW64; rv:63.0) Gecko/20180101 Firefox/63.0'
+USERAGENT='Mozilla/5.0 (Windows NT 10.0; WOW64; rv:65.0) Gecko/20180101 Firefox/65.0'
 
 # browser open url in web search option
 BROWSER="xdg-open" # allow for use of user defined default browser
@@ -526,8 +526,7 @@ usage()
   echo ""
   echo "  -f <num>  - download and extract exploit archives from chosen sites"
   echo "            - ? to list sites"
-  echo "  -u <num>  - update exploit archive from chosen site"
-  echo "            - ? to list sites"
+  echo "  -u <num>  - update exploit archive from chosen site - ? to list sites"
   echo "  -s <str>  - exploit to search using <str> in ${EXPLOIT_DIR}"
   echo "  -w <str>  - exploit to search in web exploit site"
   echo "  -e <dir>  - exploits base directory (default: /usr/share/exploits)"
