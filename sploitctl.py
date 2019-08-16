@@ -29,7 +29,6 @@ __decompress__ = True
 __remove__ = True
 __max_trds__ = 5
 __useragent__ = "Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0"
-__no_confirm__ = False
 __executer__ = None
 __chunk_size__ = 1024
 
@@ -111,7 +110,7 @@ def decompress(infilename):
     filename = os.path.basename(infilename)
     os.chdir(os.path.dirname(infilename))
     archive = None
-    if __decompress__ == False:
+    if __decompress__ is False:
         return
     try:
         info(f"decompressing {filename}")
@@ -120,13 +119,12 @@ def decompress(infilename):
         elif re.fullmatch(r"^.*\.(zip)$", filename.lower()):
             archive = zipfile.ZipFile(filename)
         else:
-            return -1
+            raise TypeError("file type not supported")
         archive.extractall()
         archive.close()
         info(f"decompressing {filename} completed")
     except Exception as ex:
         err(f'Error while decompressing {filename}: {str(ex)}')
-        return -1
 
 
 # remove file and ignore errors
@@ -141,7 +139,7 @@ def remove(filename):
 def check_dir(dir_name):
     try:
         if os.path.isdir(dir_name):
-            pass
+            return
         else:
             info(f"creating directory {dir_name}")
             os.mkdir(dir_name)
@@ -166,40 +164,37 @@ def to_int(string):
 
 # fetch file from git
 def fetch_file_git(url, path):
-    try:
-        pygit2.clone_repository(str(url).replace('git+', ''), path)
-    except Exception as ex:
-        err(f"Error while downloading {url}: {str(ex)}")
-        remove(path)
+    pygit2.clone_repository(str(url).replace('git+', ''), path)
 
 
-# fetch file
-def fetch_file(url, path):
-    filename = os.path.basename(path)
-    direc = os.path.dirname(path)
-    check_dir(direc)
+# fetch file from http
+def fetch_http(url, path):
+    rq = requests.get(url, stream=True, headers={
+        'User-Agent': __useragent__})
+    fp = open(path, 'wb')
+    for data in rq.iter_content(chunk_size=__chunk_size__):
+        fp.write(data)
+    fp.close()
+
+
+# fetch file wrapper
+def fetch(url, path):
     try:
+        filename = os.path.basename(path)
+        direc = os.path.dirname(path)
+        check_dir(direc)
+
         if check_file(path):
-            warn(f"{filename} already exists -- skipping")
-        else:
-            info(f"downloading {filename}")
-            if str(url).startswith('git+'):
-                fetch_file_git(url.replace("git+", ""), path)
-            else:
-                chunk_size = 1024
-                rq = requests.get(url, stream=True, headers={
-                                  'User-Agent': __useragent__})
-                fp = open(path, 'wb')
-                for data in rq.iter_content(chunk_size=chunk_size):
-                    fp.write(data)
-                fp.close()
-            info(f"downloading {filename} completed")
+            return warn(f"{filename} already exists -- skipping")
+
+        info(f"downloading {filename}")
         if str(url).startswith('git+'):
-            pass
-        elif decompress(path) != -1:
-            remove(path)
+            fetch_file_git(url.replace("git+", ""), path)
+        else:
+            fetch_http(url, path)
+        info(f"downloading {filename} completed")
     except KeyboardInterrupt:
-        return
+        pass
     except Exception as ex:
         err(f"Error while downloading {url}: {str(ex)}")
         remove(path)
@@ -214,26 +209,24 @@ def update_git(name, path):
         repo = pygit2.repository.Repository(path)
         repo.stash(repo.default_signature)
         repo.remotes['origin'].fetch()
-        unblock_stdout()
     except Exception as ex:
-        unblock_stdout()
         err(f"unable to update archive: {str(ex)}")
+    finally:
+        unblock_stdout()
 
 
 def load_repo():
     global __repo__
     repo_file = f"{os.path.dirname(os.path.realpath(__file__))}/repo.json"
-    if __repo__.__len__() <= 0:
-        try:
-            if not os.path.isfile(repo_file):
-                raise FileNotFoundError("Repo file not found")
-            fp = open(repo_file, 'r')
-            __repo__ = json.load(fp)
-            fp.close()
-            sync_packetstorm()
-        except Exception as ex:
-            err(f"Error while loading Repo: {str(ex)}")
-            exit(-1)
+    try:
+        if not os.path.isfile(repo_file):
+            raise FileNotFoundError("Repo file not found")
+        fp = open(repo_file, 'r')
+        __repo__ = json.load(fp)
+        fp.close()
+    except Exception as ex:
+        err(f"Error while loading Repo: {str(ex)}")
+        exit(-1)
 
 
 def save_repo():
@@ -248,9 +241,17 @@ def save_repo():
         exit(-1)
 
 
+def parse_args(argv):
+    pass
+
+
 def main(argv):
     banner()
+
     load_repo()
+
+    parse_args(argv)
+
     save_repo()
     return 0
 
