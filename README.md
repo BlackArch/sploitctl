@@ -29,6 +29,8 @@ options:
 
 misc:
 
+  -X         - decompress archive
+  -R         - remove archive after decompression
   -V         - print version of sploitctl and exit
   -H         - print this help and exit
 ```

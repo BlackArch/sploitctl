@@ -33,6 +33,7 @@ __executer__ = None
 __chunk_size__ = 1024
 
 __repo__ = {}
+__repo_file__ = None
 
 
 def err(string):
@@ -47,10 +48,6 @@ def info(string):
     print(colored("[*]", "blue", attrs=["bold"]), string)
 
 
-def success(string):
-    print(colored("[+]", "green", attrs=["bold"]), string)
-
-
 # usage and help
 def usage():
     __usage__ = "usage:\n\n"
@@ -61,6 +58,8 @@ def usage():
     __usage__ += f"  -d <dir>   - exploits base directory (default: {__exploit_path__})\n"
     __usage__ += "  -s <regex> - exploits to search using <regex> in base directory\n\n"
     __usage__ += "misc:\n\n"
+    __usage__ += "  -X         - decompress archive\n"
+    __usage__ += "  -R         - remove archive after decompression\n"
     __usage__ += f"  -V         - print version of {__project__} and exit\n"
     __usage__ += "  -H         - print this help and exit\n\n"
 
@@ -92,6 +91,7 @@ def banner():
 # sync packetstorm urls
 def sync_packetstorm():
     global __repo__
+    info("syncing packetstorm archives")
     current_year = date.today().strftime("%Y")
     current_month = date.today().strftime("%m")
 
@@ -132,7 +132,6 @@ def decompress(infilename):
             raise TypeError("file type not supported")
         archive.extractall()
         archive.close()
-        success(f"decompressing {filename} completed")
     except Exception as ex:
         err(f'Error while decompressing {filename}: {str(ex)}')
 
@@ -189,6 +188,7 @@ def fetch_file_http(url, path):
 
 # fetch file wrapper
 def fetch_file(url, path):
+    global __decompress__
     try:
         filename = os.path.basename(path)
         direc = os.path.dirname(path)
@@ -202,7 +202,10 @@ def fetch_file(url, path):
             fetch_file_git(url.replace("git+", ""), path)
         else:
             fetch_file_http(url, path)
-        success(f"downloading {filename} completed")
+            if __decompress__:
+                decompress(path)
+                if __remove__:
+                    remove(path)
     except KeyboardInterrupt:
         pass
     except Exception as ex:
@@ -281,11 +284,12 @@ def search(regex):
 
 def load_repo():
     global __repo__
-    repo_file = f"{os.path.dirname(os.path.realpath(__file__))}/repo.json"
+    global __repo_file__
+
     try:
-        if not os.path.isfile(repo_file):
+        if not os.path.isfile(__repo_file__):
             raise FileNotFoundError("Repo file not found")
-        fp = open(repo_file, 'r')
+        fp = open(__repo_file__, 'r')
         __repo__ = json.load(fp)
         fp.close()
     except Exception as ex:
@@ -295,9 +299,9 @@ def load_repo():
 
 def save_repo():
     global __repo__
-    repo_file = f"{os.path.dirname(os.path.realpath(__file__))}/repo.json"
+    global __repo_file__
     try:
-        fp = open(repo_file, 'w')
+        fp = open(__repo_file__, 'w')
         json.dump(__repo__, fp)
         fp.close()
     except Exception as ex:
@@ -307,11 +311,12 @@ def save_repo():
 
 def parse_args(argv):
     global __exploit_path__
+    global __decompress__
     __operation__ = None
     __arg__ = None
 
     try:
-        opts, _ = getopt.getopt(argv[1:], "f:u:s:d:VH")
+        opts, _ = getopt.getopt(argv[1:], "f:u:s:d:VHXDR")
 
         for opt, arg in opts:
             if opt == '-f':
@@ -327,6 +332,8 @@ def parse_args(argv):
                 dirname = os.path.abspath(arg)
                 check_dir(dirname)
                 __exploit_path__ = dirname
+            elif opt == '-X':
+                __decompress__ = True
             elif opt == '-V':
                 version()
                 exit(0)
@@ -344,7 +351,10 @@ def parse_args(argv):
 def main(argv):
     global __executer__
     global __max_trds__
+    global __repo_file__
     banner()
+
+    __repo_file__ = f"{os.path.dirname(os.path.realpath(__file__))}/repo.json"
 
     load_repo()
 
