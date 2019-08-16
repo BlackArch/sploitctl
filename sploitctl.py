@@ -86,7 +86,7 @@ def sync_packetstorm():
     current_month = date.today().strftime("%m")
 
     for i in range(1999, int(current_year) + 1):
-        url = f"http://dl.packetstormsecurity.net/{str(i)[-2:]}12-exploits/{i}-exploits.tgz"
+        url = f"http://dl.packetstormsecurity.com/{str(i)[-2:]}12-exploits/{i}-exploits.tgz"
         if url in __repo__["packetstormsecurity.org"]:
             continue
         res = requests.head(url, allow_redirects=True)
@@ -96,7 +96,7 @@ def sync_packetstorm():
     if int(current_month) is 12:
         return
     for i in range(1, int(current_month) + 1):
-        url = f"http://dl.packetstormsecurity.net/{str(current_year)[-2:]}{i:02d}-exploits/{str(current_year)[-2:]}{i:02d}-exploits.tgz"
+        url = f"http://dl.packetstormsecurity.com/{str(current_year)[-2:]}{i:02d}-exploits/{str(current_year)[-2:]}{i:02d}-exploits.tgz"
         if url in __repo__["packetstormsecurity.org"]:
             continue
         res = requests.head(url, allow_redirects=True)
@@ -168,7 +168,7 @@ def fetch_file_git(url, path):
 
 
 # fetch file from http
-def fetch_http(url, path):
+def fetch_file_http(url, path):
     rq = requests.get(url, stream=True, headers={
         'User-Agent': __useragent__})
     fp = open(path, 'wb')
@@ -178,7 +178,7 @@ def fetch_http(url, path):
 
 
 # fetch file wrapper
-def fetch(url, path):
+def fetch_file(url, path):
     try:
         filename = os.path.basename(path)
         direc = os.path.dirname(path)
@@ -191,13 +191,40 @@ def fetch(url, path):
         if str(url).startswith('git+'):
             fetch_file_git(url.replace("git+", ""), path)
         else:
-            fetch_http(url, path)
+            fetch_file_http(url, path)
         info(f"downloading {filename} completed")
     except KeyboardInterrupt:
         pass
     except Exception as ex:
         err(f"Error while downloading {url}: {str(ex)}")
         remove(path)
+
+
+def fetch(id):
+    global __repo__
+    global __executer__
+    repo_list = list(__repo__.keys())
+    try:
+        if id > repo_list.__len__():
+            raise OverflowError("id is too big")
+        elif id < 0:
+            raise IndexError("id is too small")
+
+        sync_packetstorm()
+
+        if id is 0:
+            for _, i in enumerate(__repo__):
+                for _, j in enumerate(__repo__[i]):
+                    __executer__.submit(
+                        fetch_file, j, f"{__exploit_path__}/{j.split('/')[-1]}")
+        else:
+            site = repo_list[id - 1]
+            for _, i in enumerate(__repo__[site]):
+                __executer__.submit(
+                    fetch_file, i, f"{__exploit_path__}/{str(i).split('/')[-1]}")
+        __executer__.shutdown(wait=True)
+    except Exception as ex:
+        err(f"unable to fetch archive: {str(ex)}")
 
 
 # update git repository
@@ -213,6 +240,22 @@ def update_git(name, path):
         err(f"unable to update archive: {str(ex)}")
     finally:
         unblock_stdout()
+
+
+# search exploits directory for regex match
+def search(regex):
+    global __exploit_path__
+    count = 0
+    try:
+        for root, _, files in os.walk(__exploit_path__):
+            for f in files:
+                if re.match(regex, f):
+                    info(f"exploit found: {os.path.join(root, f)}")
+                    count += 1
+        if count == 0:
+            err("exploit not found")
+    except:
+        pass
 
 
 def load_repo():
@@ -242,17 +285,63 @@ def save_repo():
 
 
 def parse_args(argv):
-    pass
+    global __exploit_path__
+    __operation__ = None
+    __arg__ = None
+
+    try:
+        opts, _ = getopt.getopt(argv[1:], "f:s:d:VH")
+
+        for opt, arg in opts:
+            if opt == '-f':
+                __operation__ = fetch
+                __arg__ = to_int(arg)
+            elif opt == '-s':
+                __operation__ = search
+                __arg__ = arg
+            elif opt == '-d':
+                dirname = os.path.abspath(arg)
+                check_dir(dirname)
+                __exploit_path__ = dirname
+            elif opt == '-V':
+                version()
+                exit(0)
+            elif opt == '-H':
+                usage()
+                exit(0)
+    except Exception as ex:
+        err(f"Error while parsing arguments: {str(ex)}")
+        err("WTF?! mount /dev/brain")
+        exit(-1)
+    return __operation__, __arg__
 
 
+# controller and program flow
 def main(argv):
+    global __executer__
+    global __max_trds__
     banner()
 
     load_repo()
 
-    parse_args(argv)
+    __executer__ = ThreadPoolExecutor(__max_trds__)
+    __operation__, __args__ = parse_args(argv)
+
+    if __operation__ == None:
+        err("no operation selected")
+        return -1
+
+    if __args__ == None:
+        __operation__()
+    else:
+        __operation__(__args__)
+
+    __executer__.shutdown()
 
     save_repo()
+
+    info("game over")
+
     return 0
 
 
