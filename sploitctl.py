@@ -36,25 +36,35 @@ __repo__ = {}
 
 
 def err(string):
-    print(colored("[-]", "red", attrs=["bold"]) +
-          f" {string}", file=sys.stderr)
+    print(colored("[-]", "red", attrs=["bold"]), string, file=sys.stderr)
 
 
 def warn(string):
-    print(colored("[!]", "yellow", attrs=["bold"]) + f" {string}")
+    print(colored("[!]", "yellow", attrs=["bold"]), string)
 
 
 def info(string):
-    print(colored("[*]", "blue", attrs=["bold"]) + f" {string}")
+    print(colored("[*]", "blue", attrs=["bold"]), string)
 
 
 def success(string):
-    print(colored("[+]", "green", attrs=["bold"]) + f" {string}")
+    print(colored("[+]", "green", attrs=["bold"]), string)
 
 
 # usage and help
 def usage():
-    print("usage")
+    __usage__ = "usage:\n\n"
+    __usage__ += f"  {__project__} -f <arg> [options] | -s <arg> [options] | <misc>\n\n"
+    __usage__ += "options:\n\n"
+    __usage__ += "  -f <num>   - download exploit archives from chosen sites\n"
+    __usage__ += "             - ? to list sites\n"
+    __usage__ += f"  -d <dir>   - exploits base directory (default: {__exploit_path__})\n"
+    __usage__ += "  -s <regex> - exploits to search using <regex> in base directory\n\n"
+    __usage__ += "misc:\n\n"
+    __usage__ += f"  -V         - print version of {__project__} and exit\n"
+    __usage__ += "  -H         - print this help and exit\n\n"
+
+    print(__usage__)
 
 
 # print version
@@ -122,7 +132,7 @@ def decompress(infilename):
             raise TypeError("file type not supported")
         archive.extractall()
         archive.close()
-        info(f"decompressing {filename} completed")
+        success(f"decompressing {filename} completed")
     except Exception as ex:
         err(f'Error while decompressing {filename}: {str(ex)}')
 
@@ -192,7 +202,7 @@ def fetch_file(url, path):
             fetch_file_git(url.replace("git+", ""), path)
         else:
             fetch_file_http(url, path)
-        info(f"downloading {filename} completed")
+        success(f"downloading {filename} completed")
     except KeyboardInterrupt:
         pass
     except Exception as ex:
@@ -214,14 +224,18 @@ def fetch(id):
 
         if id is 0:
             for _, i in enumerate(__repo__):
+                base_path = f"{__exploit_path__}/{i}"
+                check_dir(base_path)
                 for _, j in enumerate(__repo__[i]):
                     __executer__.submit(
-                        fetch_file, j, f"{__exploit_path__}/{j.split('/')[-1]}")
+                        fetch_file, j, f"{base_path}/{str(j).split('/')[-1]}")
         else:
             site = repo_list[id - 1]
+            base_path = f"{__exploit_path__}/{site}"
+            check_dir(base_path)
             for _, i in enumerate(__repo__[site]):
                 __executer__.submit(
-                    fetch_file, i, f"{__exploit_path__}/{str(i).split('/')[-1]}")
+                    fetch_file, i, f"{base_path}/{str(i).split('/')[-1]}")
         __executer__.shutdown(wait=True)
     except Exception as ex:
         err(f"unable to fetch archive: {str(ex)}")
@@ -229,7 +243,6 @@ def fetch(id):
 
 # update git repository
 def update_git(name, path):
-    info(f"updating {name}")
     try:
         block_stdout()
         os.chdir(path)
@@ -240,6 +253,14 @@ def update_git(name, path):
         err(f"unable to update archive: {str(ex)}")
     finally:
         unblock_stdout()
+
+
+def update_packetstorm():
+    pass
+
+
+def update(id):
+    pass
 
 
 # search exploits directory for regex match
@@ -290,11 +311,14 @@ def parse_args(argv):
     __arg__ = None
 
     try:
-        opts, _ = getopt.getopt(argv[1:], "f:s:d:VH")
+        opts, _ = getopt.getopt(argv[1:], "f:u:s:d:VH")
 
         for opt, arg in opts:
             if opt == '-f':
                 __operation__ = fetch
+                __arg__ = to_int(arg)
+            elif opt == '-u':
+                __operation__ = update
                 __arg__ = to_int(arg)
             elif opt == '-s':
                 __operation__ = search
