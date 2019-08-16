@@ -3,6 +3,7 @@
 #_sploitctl_options="-f <num>  - download exploit archives from chosen sites.
 #-d <dir>   - exploits base directory (default: /usr/share/exploits).
 #-s <regex> - exploits to search using <regex> in base directory.
+#-t <num>   - max parallel downloads (default: 5)
 #-X         - decompress archive.
 #-R         - remove archive after decompression.
 #-V         - print version of sploitctl and exit.
@@ -12,7 +13,7 @@ _sploitctl()
 {
     local current options
 
-    options="-f -s -d -V -H"
+    options="-f -d -s -t -X -R -V -H"
 
     current="${COMP_WORDS[COMP_CWORD]}"
 

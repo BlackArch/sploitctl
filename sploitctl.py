@@ -26,7 +26,7 @@ __project__ = "sploitctl"
 __exploit_path__ = "/usr/share/exploits"
 
 __decompress__ = True
-__remove__ = True
+__remove__ = False
 __max_trds__ = 5
 __useragent__ = "Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0"
 __executer__ = None
@@ -56,7 +56,8 @@ def usage():
     __usage__ += "  -f <num>   - download exploit archives from chosen sites\n"
     __usage__ += "             - ? to list sites\n"
     __usage__ += f"  -d <dir>   - exploits base directory (default: {__exploit_path__})\n"
-    __usage__ += "  -s <regex> - exploits to search using <regex> in base directory\n\n"
+    __usage__ += "  -s <regex> - exploits to search using <regex> in base directory\n"
+    __usage__ += f"  -t <num>   - max parallel downloads (default: {__max_trds__})\n\n"
     __usage__ += "misc:\n\n"
     __usage__ += "  -X         - decompress archive\n"
     __usage__ += "  -R         - remove archive after decompression\n"
@@ -258,6 +259,10 @@ def update_git(name, path):
         unblock_stdout()
 
 
+def update_exploitdb():
+    pass
+
+
 def update_packetstorm():
     pass
 
@@ -328,11 +333,13 @@ def save_repo():
 def parse_args(argv):
     global __exploit_path__
     global __decompress__
+    global __remove__
+    global __max_trds__
     __operation__ = None
     __arg__ = None
 
     try:
-        opts, _ = getopt.getopt(argv[1:], "f:u:s:d:VHXDR")
+        opts, _ = getopt.getopt(argv[1:], "f:u:s:d:t:VHXDR")
 
         for opt, arg in opts:
             if opt == '-f':
@@ -354,8 +361,14 @@ def parse_args(argv):
                 dirname = os.path.abspath(arg)
                 check_dir(dirname)
                 __exploit_path__ = dirname
+            elif opt == '-t':
+                __max_trds__ = to_int(arg)
+                if __max_trds__ <= 0:
+                    raise Exception("threads number can't be less than 1")
             elif opt == '-X':
                 __decompress__ = True
+            elif opt == '-R':
+                __remove__ = True
             elif opt == '-V':
                 version()
                 exit(0)

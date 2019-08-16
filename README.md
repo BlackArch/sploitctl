@@ -26,6 +26,7 @@ options:
              - ? to list sites
   -d <dir>   - exploits base directory (default: /usr/share/exploits)
   -s <regex> - exploits to search using <regex> in base directory
+  -t <num>   - max parallel downloads (default: 5)
 
 misc:
 
