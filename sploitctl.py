@@ -33,48 +33,7 @@ __no_confirm__ = False
 __executer__ = None
 __chunk_size__ = 1024
 
-__repo__ = {
-    "exploit-db": [
-        "git+https://github.com/offensive-security/exploitdb.git",
-        "git+https://github.com/offensive-security/exploitdb-bin-sploits.git"
-    ],
-    "m00-exploits": [
-        "https://github.com/BlackArch/m00-exploits/raw/master/m00-exploits.tar.gz"
-    ],
-    "lsd-pl-exploits": [
-        "https://github.com/BlackArch/lsd-pl-exploits/raw/master/aix.zip",
-        "https://github.com/BlackArch/lsd-pl-exploits/raw/master/bsd.zip",
-        "https://github.com/BlackArch/lsd-pl-exploits/raw/master/hp.zip",
-        "https://github.com/BlackArch/lsd-pl-exploits/raw/master/irix.zip",
-        "https://github.com/BlackArch/lsd-pl-exploits/raw/master/jvm.zip",
-        "https://github.com/BlackArch/lsd-pl-exploits/raw/master/linux.zip",
-        "https://github.com/BlackArch/lsd-pl-exploits/raw/master/other.zip",
-        "https://github.com/BlackArch/lsd-pl-exploits/raw/master/sco.zip",
-        "https://github.com/BlackArch/lsd-pl-exploits/raw/master/solaris.zip"
-    ],  # packetstormsecurity is precomputed yearly
-    "packetstormsecurity.org": [
-        "http://dl.packetstormsecurity.net/9912-exploits/1999-exploits.tgz",
-        "http://dl.packetstormsecurity.net/0012-exploits/2000-exploits.tgz",
-        "http://dl.packetstormsecurity.net/0112-exploits/2001-exploits.tgz",
-        "http://dl.packetstormsecurity.net/0212-exploits/2002-exploits.tgz",
-        "http://dl.packetstormsecurity.net/0312-exploits/2003-exploits.tgz",
-        "http://dl.packetstormsecurity.net/0412-exploits/2004-exploits.tgz",
-        "http://dl.packetstormsecurity.net/0512-exploits/2005-exploits.tgz",
-        "http://dl.packetstormsecurity.net/0612-exploits/2006-exploits.tgz",
-        "http://dl.packetstormsecurity.net/0712-exploits/2007-exploits.tgz",
-        "http://dl.packetstormsecurity.net/0812-exploits/2008-exploits.tgz",
-        "http://dl.packetstormsecurity.net/0912-exploits/2009-exploits.tgz",
-        "http://dl.packetstormsecurity.net/1012-exploits/2010-exploits.tgz",
-        "http://dl.packetstormsecurity.net/1112-exploits/2011-exploits.tgz",
-        "http://dl.packetstormsecurity.net/1212-exploits/2012-exploits.tgz",
-        "http://dl.packetstormsecurity.net/1312-exploits/2013-exploits.tgz",
-        "http://dl.packetstormsecurity.net/1412-exploits/2014-exploits.tgz",
-        "http://dl.packetstormsecurity.net/1512-exploits/2015-exploits.tgz",
-        "http://dl.packetstormsecurity.net/1612-exploits/2016-exploits.tgz",
-        "http://dl.packetstormsecurity.net/1712-exploits/2017-exploits.tgz",
-        "http://dl.packetstormsecurity.net/1812-exploits/2018-exploits.tgz"
-    ]
-}
+__repo__ = {}
 
 
 def err(string):
@@ -126,22 +85,25 @@ def sync_packetstorm():
     global __repo__
     current_year = date.today().strftime("%Y")
     current_month = date.today().strftime("%m")
-    for i in range(1999, int(current_year)):
+
+    for i in range(1999, int(current_year) + 1):
         url = f"http://dl.packetstormsecurity.net/{str(i)[-2:]}12-exploits/{i}-exploits.tgz"
-        if url in __repo__["packetstorm.org"]:
+        if url in __repo__["packetstormsecurity.org"]:
             continue
         res = requests.head(url, allow_redirects=True)
         if res.url != url and res.url.endswith("404.html"):
             continue
-        __repo__["packetstorm.org"].append(url)
+        __repo__["packetstormsecurity.org"].append(url)
+    if int(current_month) is 12:
+        return
     for i in range(1, int(current_month) + 1):
         url = f"http://dl.packetstormsecurity.net/{str(current_year)[-2:]}{i:02d}-exploits/{str(current_year)[-2:]}{i:02d}-exploits.tgz"
-        if url in __repo__["packetstorm.org"]:
+        if url in __repo__["packetstormsecurity.org"]:
             continue
         res = requests.head(url, allow_redirects=True)
         if res.url != url and res.url.endswith("404.html"):
             continue
-        __repo__["packetstorm.org"].append(url)
+        __repo__["packetstormsecurity.org"].append(url)
 
 
 # decompress file
@@ -153,7 +115,7 @@ def decompress(infilename):
         return
     try:
         info(f"decompressing {filename}")
-        if re.fullmatch(r"^.*\.(tgz)$", filename.lower()):
+        if re.fullmatch(r"^.*\.(tgz|tar.gz)$", filename.lower()):
             archive = tarfile.open(filename)
         elif re.fullmatch(r"^.*\.(zip)$", filename.lower()):
             archive = zipfile.ZipFile(filename)
@@ -258,9 +220,38 @@ def update_git(name, path):
         err(f"unable to update archive: {str(ex)}")
 
 
+def load_repo():
+    global __repo__
+    repo_file = f"{os.path.dirname(os.path.realpath(__file__))}/repo.json"
+    if __repo__.__len__() <= 0:
+        try:
+            if not os.path.isfile(repo_file):
+                raise FileNotFoundError("Repo file not found")
+            fp = open(repo_file, 'r')
+            __repo__ = json.load(fp)
+            fp.close()
+            sync_packetstorm()
+        except Exception as ex:
+            err(f"Error while loading Repo: {str(ex)}")
+            exit(-1)
+
+
+def save_repo():
+    global __repo__
+    repo_file = f"{os.path.dirname(os.path.realpath(__file__))}/repo.json"
+    try:
+        fp = open(repo_file, 'w')
+        json.dump(__repo__, fp)
+        fp.close()
+    except Exception as ex:
+        err(f"Error while saving Repo: {str(ex)}")
+        exit(-1)
+
+
 def main(argv):
     banner()
-
+    load_repo()
+    save_repo()
     return 0
 
 
@@ -275,6 +266,7 @@ if __name__ == "__main__":
         import tarfile
         import zipfile
         import pygit2
+        import json
         from datetime import date
         from termcolor import colored
         from shutil import copyfileobj, rmtree, chown
