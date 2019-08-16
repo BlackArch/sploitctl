@@ -1,0 +1,22 @@
+# Attention: this is a Bash Script, not `sh`.
+
+#_sploitctl_options="-f <num>  - download exploit archives from chosen sites.
+#-d <dir>   - exploits base directory (default: /usr/share/exploits).
+#-s <regex> - exploits to search using <regex> in base directory.
+#-V         - print version of sploitctl and exit.
+#-H         - print this help and exit."
+
+_sploitctl()
+{
+    local current options
+
+    options="-f -s -d -V -H"
+
+    current="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ "${current}" == -* ]]; then
+        COMPREPLY=($(compgen -W "${options}" -- ${current}))
+    fi
+}
+
+complete -F _sploitctl sploitctl
