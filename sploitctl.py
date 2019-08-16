@@ -266,6 +266,22 @@ def update(id):
     pass
 
 
+def print_sites(func):
+    try:
+        info("available exploit sites and archives:\n")
+        print("    > 0   - all exploit sites")
+        available = ()
+        if func.__name__ is "fetch":
+            available = __repo__
+        elif func.__name__ is "update":
+            available = ("exploit-db", "packetstormsecurity.org")
+        for i, j in enumerate(available):
+            print(f"    > {i + 1}   - {j}")
+    except Exception as ex:
+        err(str(ex))
+        exit(-1)
+
+
 # search exploits directory for regex match
 def search(regex):
     global __exploit_path__
@@ -320,9 +336,15 @@ def parse_args(argv):
 
         for opt, arg in opts:
             if opt == '-f':
+                if arg == '?':
+                    print_sites(fetch)
+                    exit(0)
                 __operation__ = fetch
                 __arg__ = to_int(arg)
             elif opt == '-u':
+                if arg == '?':
+                    print_sites(update)
+                    exit(0)
                 __operation__ = update
                 __arg__ = to_int(arg)
             elif opt == '-s':
