@@ -266,8 +266,26 @@ def update_git(name, path):
     try:
         os.chdir(path)
         repo = pygit2.repository.Repository(path)
-        repo.remotes['origin'].fetch()
-        repo.checkout_head()
+        for remote in repo.remotes:
+            if remote.name == "origin":
+                remote.fetch()
+                remote_master_id = repo.lookup_reference(
+                    "refs/remotes/origin/master").target
+                merge_result, _ = repo.merge_analysis(remote_master_id)
+                if merge_result & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
+                    return
+                elif merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
+                    repo.checkout_tree(repo.get(remote_master_id))
+                    try:
+                        master_ref = repo.lookup_reference('refs/heads/master')
+                        master_ref.set_target(remote_master_id)
+                    except KeyError:
+                        repo.create_branch(
+                            "master", repo.get(remote_master_id))
+                    repo.head.set_target(remote_master_id)
+                raise AssertionError('unknown state')
+            else:
+                raise AssertionError('unknown state')
     except Exception as ex:
         err(f"unable to update {name}: {str(ex)}")
 
