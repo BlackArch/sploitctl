@@ -153,7 +153,7 @@ def check_dir(dir_name):
 
 # check if file exists
 def check_file(path):
-    return os.path.isfile(f"{path}")
+    return os.path.exists(f"{path}")
 
 
 # check if proxy is valid using regex
@@ -187,7 +187,7 @@ def get_installed():
 
 # fetch file from git
 def fetch_file_git(url, path):
-    pygit2.clone_repository(str(url).replace('git+', ''), path)
+    pygit2.clone_repository(url, path)
 
 
 # fetch file from http
@@ -204,29 +204,29 @@ def fetch_file_http(url, path):
 # fetch file wrapper
 def fetch_file(url, path):
     global __decompress__
-    try:
-        filename = os.path.basename(path)
-        direc = os.path.dirname(path)
-        check_dir(direc)
 
-        if check_file(path):
+    filepath = path.replace(".git", "")
+    filename = os.path.basename(filepath)
+    check_dir(os.path.dirname(filepath))
+
+    try:
+        if check_file(filepath):
             warn(f"{filename} already exists -- skipping")
         else:
             info(f"downloading {filename}")
             if str(url).startswith('git+'):
-                fetch_file_git(url.replace("git+", ""),
-                               path.replace(".git", ""))
+                fetch_file_git(url.replace("git+", ""), filepath)
             else:
-                fetch_file_http(url, path)
+                fetch_file_http(url, filepath)
         if __decompress__ and not str(url).startswith('git+'):
-            decompress(path)
+            decompress(filepath)
             if __remove__:
-                remove(path)
+                remove(filepath)
     except KeyboardInterrupt:
         pass
     except Exception as ex:
         err(f"Error while downloading {url}: {str(ex)}")
-        remove(path)
+        remove(filepath)
 
 
 # wrapper around fetch filed
@@ -240,7 +240,8 @@ def fetch(id):
         elif id < 0:
             raise IndexError("id is too small")
 
-        sync_packetstorm()
+        if (id == 0) or (repo_list[id - 1] == "packetstormsecurity.com"):
+            sync_packetstorm()
 
         if id == 0:
             for _, i in enumerate(__repo__):
@@ -301,9 +302,11 @@ def update_packetstorm():
     current_month = date.today().strftime("%m")
 
     for year in range(1999, int(current_year) + 1):
-        for month in range(1, int(current_month) + 1):
+        for month in range(1, 13):
             url = f"http://dl.packetstormsecurity.com/{str(year)[-2:]}{month:02d}-exploits/{str(year)[-2:]}{month:02d}-exploits.tgz"
             packetstorm_repo.append(url)
+            if (year == int(current_year)) and (month > int(current_month)):
+                break
 
     dirs = [str(x[0]).split('/')[-1]
             for x in os.walk(f"{__exploit_path__}/packetstormsecurity.com")]
@@ -312,13 +315,17 @@ def update_packetstorm():
         url = f"http://dl.packetstormsecurity.com/{d}/{d}.tgz"
         if url in packetstorm_repo:
             packetstorm_repo.remove(url)
+
     base_path = f"{__exploit_path__}/packetstormsecurity.com"
-    for _, url in enumerate(packetstorm_repo):
+
+    def dl_if_valid(url):
         res = requests.head(url, allow_redirects=True)
         if res.url != url and res.url.endswith("404.html"):
-            continue
-        __executer__.submit(
-            fetch_file, url, f"{base_path}/{str(url).split('/')[-1]}")
+            return
+        fetch_file(url, f"{base_path}/{str(url).split('/')[-1]}")
+
+    for _, url in enumerate(packetstorm_repo):
+        __executer__.submit(dl_if_valid, url)
 
 
 # update exploit-db exploits
@@ -334,8 +341,7 @@ def update_exploitdb():
             name = path.split('/')[-1]
             __executer__.submit(update_git, name, path)
         else:
-            url = str(i).replace("git+", "")
-            __executer__.submit(fetch_file_git, url, path)
+            __executer__.submit(fetch_file, i, path)
 
 
 # generic updater for m00-exploits and lsd-pl-exploits
@@ -349,12 +355,12 @@ def update_generic(site):
         path = f"{base_path}/{str(i).split('/')[-1]}"
         if os.path.exists(str(path).split('.')[0]):
             continue
-        __executer__.submit(
-            fetch_file, i, path)
+        __executer__.submit(fetch_file, i, path)
 
 
 # wrapper around update_* functions
 def update(id):
+    global __executer__
     funcs = []
     installed = get_installed()
     funcs_dict = {
@@ -379,6 +385,7 @@ def update(id):
                 i[0]()
             else:
                 i[0](i[1])
+        __executer__.shutdown(wait=True)
     except Exception as ex:
         err(f"unable to update: {str(ex)}")
 
@@ -538,8 +545,9 @@ def main(argv):
 
     load_repo()
 
-    __executer__ = ThreadPoolExecutor(__max_trds__)
     __operation__, __args__ = parse_args(argv)
+
+    __executer__ = ThreadPoolExecutor(__max_trds__)
 
     if __operation__ == None:
         err("no operation selected")
