@@ -1,0 +1,40 @@
+.TH "SPLOITCTL" "1" "" "" ""
+.SH NAME
+.PP
+sploitctl \- fetch, install and search exploit archives from exploit sites
+.SH SYNOPSIS
+.PP
+sploitctl \fB\-f\fR <arg> [options] | \fB\-u\fR <arg> [options] | \fB\-s\fR <arg> [options] | <misc>
+.SH DESCRIPTION
+.PP
+Script to fetch, install, update and search exploit archives from well-known sites like packetstormsecurity.com and exploit-db.com.
+.SH OPTIONS
+.PP
+.HP
+\fB\-f\fR <num>     \- download and extract exploit archives from chosen sites
+.IP
+      \- ? to list sites
+.HP
+\fB\-u\fR <num>     \- update exploit archive from chosen site 
+.IP
+      \- ? to list sites
+.HP
+\fB\-d\fR <dir>     \- exploits base directory (default: /usr/share/exploits)
+.HP
+\fB\-s\fR <regex>   \- exploits to search using <regex> in base directory
+.HP
+\fB\-t\fR <num>     \- max parallel downloads (default: 4)
+.SH MISC
+.PP
+.HP
+\fB\-A\fR <str>     \- set useragent string
+.HP
+\fB\-P\fR <str>     \- set proxy (format: proto://user:pass@host:port)
+.HP
+\fB\-X\fR           \- decompress archive
+.HP
+\fB\-R\fR           \- remove archive after decompression
+.HP
+\fB\-V\fR <file>    \- print version of sploitctl and exit
+.HP
+\fB\-H\fR <file>    \- print help and exit

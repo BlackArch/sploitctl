@@ -52,7 +52,7 @@ def info(string):
 # usage and help
 def usage():
     __usage__ = "usage:\n\n"
-    __usage__ += f"  {__project__} -f <arg> [options] | -s <arg> [options] | <misc>\n\n"
+    __usage__ += f"  {__project__} -f <arg> [options] | -u <arg> [options] | -s <arg> [options] | <misc>\n\n"
     __usage__ += "options:\n\n"
     __usage__ += "  -f <num>   - download exploit archives from chosen sites\n"
     __usage__ += "             - ? to list sites\n"
@@ -166,6 +166,7 @@ def check_file(path):
     return os.path.isfile(f"{path}")
 
 
+# check if proxy is valid using regex
 def check_proxy(proxy):
     try:
         reg = r"^(http|https|socks4|socks5)://([a-zA-Z0-9._-]+:[a-zA-Z0-9._-]+@)?[a-z0-9.]+:[0-9]{1,5}$"
@@ -185,6 +186,7 @@ def to_int(string):
         exit(-1)
 
 
+# get the lists of installed archives in the base path
 def get_installed():
     available = []
     for _, i in enumerate(__repo__):
@@ -237,6 +239,7 @@ def fetch_file(url, path):
         remove(path)
 
 
+# wrapper around fetch filed
 def fetch(id):
     global __repo__
     global __executer__
@@ -282,6 +285,7 @@ def update_git(name, path):
         unblock_stdout()
 
 
+# update packetstorm exploits
 def update_packetstorm():
     global __exploit_path__
     global __repo__
@@ -312,6 +316,7 @@ def update_packetstorm():
             fetch_file, url, f"{base_path}/{str(url).split('/')[-1]}")
 
 
+# update exploit-db exploits
 def update_exploitdb():
     global __exploit_path__
     global __repo__
@@ -325,6 +330,7 @@ def update_exploitdb():
             __executer__.submit(fetch_file_git, i, f"{base_path}/{i}")
 
 
+# generic updater for m00-exploits and lsd-pl-exploits
 def update_generic(site):
     global __exploit_path__
     global __repo__
@@ -339,6 +345,7 @@ def update_generic(site):
             fetch_file, i, path)
 
 
+# wrapper around update_* functions
 def update(id):
     funcs = []
     installed = get_installed()
@@ -368,6 +375,7 @@ def update(id):
         err(f"unable to update: {str(ex)}")
 
 
+# print available sites for archive download
 def print_sites(func):
     global __repo__
     try:
@@ -403,6 +411,7 @@ def search(regex):
         pass
 
 
+# load repo.json file to __repo__
 def load_repo():
     global __repo__
     global __repo_file__
@@ -418,6 +427,7 @@ def load_repo():
         exit(-1)
 
 
+# flush __repo__ to disk
 def save_repo():
     global __repo__
     global __repo_file__
@@ -439,11 +449,18 @@ def parse_args(argv):
     global __proxy__
     __operation__ = None
     __arg__ = None
+    opFlag = 0
 
     try:
         opts, _ = getopt.getopt(argv[1:], "f:u:s:d:t:A:P:VHXDR")
 
+        if opts.__len__() <= 0:
+            __operation__ = usage
+            return __operation__, None
+
         for opt, arg in opts:
+            if opFlag and re.fullmatch(r"^-([fsu])", opt):
+                raise getopt.GetoptError("multiple operations selected")
             if opt == '-f':
                 if arg == '?':
                     __operation__ = print_sites
@@ -451,6 +468,7 @@ def parse_args(argv):
                 else:
                     __operation__ = fetch
                     __arg__ = to_int(arg)
+                opFlag += 1
             elif opt == '-u':
                 if arg == '?':
                     __operation__ = print_sites
@@ -458,9 +476,11 @@ def parse_args(argv):
                 else:
                     __operation__ = update
                     __arg__ = to_int(arg)
+                opFlag += 1
             elif opt == '-s':
                 __operation__ = search
                 __arg__ = arg
+                opFlag += 1
             elif opt == '-d':
                 dirname = os.path.abspath(arg)
                 check_dir(dirname)
@@ -487,6 +507,10 @@ def parse_args(argv):
             elif opt == '-H':
                 usage()
                 exit(0)
+    except getopt.GetoptError as ex:
+        err(f"Error while parsing arguments: {str(ex)}")
+        warn("-H for help and usage")
+        exit(-1)
     except Exception as ex:
         err(f"Error while parsing arguments: {str(ex)}")
         err("WTF?! mount /dev/brain")
