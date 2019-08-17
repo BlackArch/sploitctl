@@ -329,10 +329,13 @@ def update_exploitdb():
     info("updating exploit-db")
     base_path = f"{__exploit_path__}/exploit-db"
     for _, i in enumerate(__repo__["exploit-db"]):
-        if os.path.exists(f"{base_path}/{i}"):
-            __executer__.submit(update_git, i, f"{base_path}/{i}")
+        path = f"{base_path}/{str(i).split('/')[-1]}".replace(".git", '')
+        if os.path.exists(path):
+            name = path.split('/')[-1]
+            __executer__.submit(update_git, name, path)
         else:
-            __executer__.submit(fetch_file_git, i, f"{base_path}/{i}")
+            url = str(i).replace("git+", "")
+            __executer__.submit(fetch_file_git, url, path)
 
 
 # generic updater for m00-exploits and lsd-pl-exploits
