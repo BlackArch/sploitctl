@@ -572,7 +572,6 @@ if __name__ == "__main__":
         import json
         from datetime import date
         from termcolor import colored
-        from shutil import copyfileobj, rmtree, chown
         from concurrent.futures import ThreadPoolExecutor
     except Exception as ex:
         print(
