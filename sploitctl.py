@@ -67,7 +67,7 @@ def usage():
     __usage__ += "  -X         - decompress archive\n"
     __usage__ += "  -R         - remove archive after decompression\n"
     __usage__ += f"  -V         - print version of {__project__} and exit\n"
-    __usage__ += "  -H         - print this help and exit\n\n"
+    __usage__ += "  -H         - print this help and exit\n"
 
     print(__usage__)
 
@@ -76,16 +76,6 @@ def usage():
 def version():
     __str_version__ = f"{__project__} v{ __version__}"
     print(__str_version__)
-
-
-# block stdout
-def block_stdout():
-    sys.stdout = open(os.devnull, 'w')
-
-
-# unblock stdout
-def unblock_stdout():
-    sys.stdout = sys.__stdout__
 
 
 # leet banner, very important
@@ -274,15 +264,11 @@ def fetch(id):
 # update git repository
 def update_git(name, path):
     try:
-        block_stdout()
         os.chdir(path)
         repo = pygit2.repository.Repository(path)
-        repo.stash(repo.default_signature)
         repo.remotes['origin'].fetch()
     except Exception as ex:
         err(f"unable to update {name}: {str(ex)}")
-    finally:
-        unblock_stdout()
 
 
 # update packetstorm exploits
@@ -546,8 +532,6 @@ def main(argv):
     __executer__.shutdown()
 
     save_repo()
-
-    info("game over")
 
     return 0
 

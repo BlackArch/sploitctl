@@ -18,7 +18,7 @@ In the latest version of the Blackarch Linux it has been added to
 
 usage:
 
-  sploitctl -f <arg> [options] | -s <arg> [options] | <misc>
+  sploitctl -f <arg> [options] | -u <arg> [options] | -s <arg> [options] | <misc>
 
 options:
 
