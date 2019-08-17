@@ -267,6 +267,7 @@ def update_git(name, path):
         os.chdir(path)
         repo = pygit2.repository.Repository(path)
         repo.remotes['origin'].fetch()
+        repo.checkout_head()
     except Exception as ex:
         err(f"unable to update {name}: {str(ex)}")
 
