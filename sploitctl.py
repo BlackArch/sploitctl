@@ -31,6 +31,7 @@ __max_trds__ = 5
 __useragent__ = "Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0"
 __executer__ = None
 __chunk_size__ = 1024
+__proxy__ = {}
 
 __repo__ = {}
 __repo_file__ = None
@@ -59,6 +60,8 @@ def usage():
     __usage__ += "  -s <regex> - exploits to search using <regex> in base directory\n"
     __usage__ += f"  -t <num>   - max parallel downloads (default: {__max_trds__})\n\n"
     __usage__ += "misc:\n\n"
+    __usage__ += "  -A         - set useragent string\n"
+    __usage__ += "  -P         - set proxy (format: proto://user:pass@host:port)\n"
     __usage__ += "  -X         - decompress archive\n"
     __usage__ += "  -R         - remove archive after decompression\n"
     __usage__ += f"  -V         - print version of {__project__} and exit\n"
@@ -163,6 +166,16 @@ def check_file(path):
     return os.path.isfile(f"{path}")
 
 
+def check_proxy(proxy):
+    try:
+        reg = r"^(http|https|socks4|socks5)://([a-zA-Z0-9._-]+:[a-zA-Z0-9._-]+@)?[a-z0-9.]+:[0-9]{1,5}$"
+        if not re.match(reg, proxy['http']):
+            raise ValueError("proxy is malformed")
+    except Exception as ex:
+        err(f"unable to use proxy: {str(ex)}")
+        exit(-1)
+
+
 # convert string to int
 def to_int(string):
     try:
@@ -179,8 +192,9 @@ def fetch_file_git(url, path):
 
 # fetch file from http
 def fetch_file_http(url, path):
+    global __proxy__
     rq = requests.get(url, stream=True, headers={
-        'User-Agent': __useragent__})
+        'User-Agent': __useragent__}, proxies=__proxy__)
     fp = open(path, 'wb')
     for data in rq.iter_content(chunk_size=__chunk_size__):
         fp.write(data)
@@ -335,11 +349,13 @@ def parse_args(argv):
     global __decompress__
     global __remove__
     global __max_trds__
+    global __useragent__
+    global __proxy__
     __operation__ = None
     __arg__ = None
 
     try:
-        opts, _ = getopt.getopt(argv[1:], "f:u:s:d:t:VHXDR")
+        opts, _ = getopt.getopt(argv[1:], "f:u:s:d:t:A:P:VHXDR")
 
         for opt, arg in opts:
             if opt == '-f':
@@ -365,6 +381,14 @@ def parse_args(argv):
                 __max_trds__ = to_int(arg)
                 if __max_trds__ <= 0:
                     raise Exception("threads number can't be less than 1")
+            elif opt == '-A':
+                __useragent__ = arg
+            elif opt == '-P':
+                if arg.startswith('http://'):
+                    __proxy__ = {"http": arg}
+                else:
+                    __proxy__ = {"http": arg, "https": arg}
+                check_proxy(__proxy__)
             elif opt == '-X':
                 __decompress__ = True
             elif opt == '-R':

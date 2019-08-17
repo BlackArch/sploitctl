@@ -30,6 +30,8 @@ options:
 
 misc:
 
+  -A         - set useragent string
+  -P         - set proxy (format: proto://user:pass@host:port)
   -X         - decompress archive
   -R         - remove archive after decompression
   -V         - print version of sploitctl and exit
