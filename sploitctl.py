@@ -5,7 +5,7 @@
 #                                                                              #
 # DESCRIPTION                                                                  #
 # Script to fetch, install, update and search exploit archives from well-known #
-# sites like packetstormsecurity.org and exploit-db.com.                       #
+# sites like packetstormsecurity.com and exploit-db.com.                       #
 #                                                                              #
 # AUTHORS                                                                      #
 # noptrix@nullsecurity.net                                                     #
@@ -25,9 +25,9 @@ __project__ = "sploitctl"
 # default exploit base directory
 __exploit_path__ = "/usr/share/exploits"
 
-__decompress__ = True
+__decompress__ = False
 __remove__ = False
-__max_trds__ = 5
+__max_trds__ = 4
 __useragent__ = "Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0"
 __executer__ = None
 __chunk_size__ = 1024
@@ -56,12 +56,14 @@ def usage():
     __usage__ += "options:\n\n"
     __usage__ += "  -f <num>   - download exploit archives from chosen sites\n"
     __usage__ += "             - ? to list sites\n"
+    __usage__ += "  -u <num>   - update exploit archive from chosen site\n"
+    __usage__ += "             - ? to list sites\n"
     __usage__ += f"  -d <dir>   - exploits base directory (default: {__exploit_path__})\n"
     __usage__ += "  -s <regex> - exploits to search using <regex> in base directory\n"
     __usage__ += f"  -t <num>   - max parallel downloads (default: {__max_trds__})\n\n"
     __usage__ += "misc:\n\n"
-    __usage__ += "  -A         - set useragent string\n"
-    __usage__ += "  -P         - set proxy (format: proto://user:pass@host:port)\n"
+    __usage__ += "  -A <str>   - set useragent string\n"
+    __usage__ += "  -P <str>   - set proxy (format: proto://user:pass@host:port)\n"
     __usage__ += "  -X         - decompress archive\n"
     __usage__ += "  -R         - remove archive after decompression\n"
     __usage__ += f"  -V         - print version of {__project__} and exit\n"
@@ -95,28 +97,28 @@ def banner():
 # sync packetstorm urls
 def sync_packetstorm():
     global __repo__
-    info("syncing packetstorm archives")
+    info("syncing packetstormsecurity.com archives")
     current_year = date.today().strftime("%Y")
     current_month = date.today().strftime("%m")
 
     for i in range(1999, int(current_year) + 1):
         url = f"http://dl.packetstormsecurity.com/{str(i)[-2:]}12-exploits/{i}-exploits.tgz"
-        if url in __repo__["packetstormsecurity.org"]:
+        if url in __repo__["packetstormsecurity.com"]:
             continue
         res = requests.head(url, allow_redirects=True)
         if res.url != url and res.url.endswith("404.html"):
             continue
-        __repo__["packetstormsecurity.org"].append(url)
-    if int(current_month) is 12:
+        __repo__["packetstormsecurity.com"].append(url)
+    if int(current_month) == 12:
         return
     for i in range(1, int(current_month) + 1):
         url = f"http://dl.packetstormsecurity.com/{str(current_year)[-2:]}{i:02d}-exploits/{str(current_year)[-2:]}{i:02d}-exploits.tgz"
-        if url in __repo__["packetstormsecurity.org"]:
+        if url in __repo__["packetstormsecurity.com"]:
             continue
         res = requests.head(url, allow_redirects=True)
         if res.url != url and res.url.endswith("404.html"):
             continue
-        __repo__["packetstormsecurity.org"].append(url)
+        __repo__["packetstormsecurity.com"].append(url)
 
 
 # decompress file
@@ -124,8 +126,6 @@ def decompress(infilename):
     filename = os.path.basename(infilename)
     os.chdir(os.path.dirname(infilename))
     archive = None
-    if __decompress__ is False:
-        return
     try:
         info(f"decompressing {filename}")
         if re.fullmatch(r"^.*\.(tgz|tar.gz)$", filename.lower()):
@@ -185,6 +185,14 @@ def to_int(string):
         exit(-1)
 
 
+def get_installed():
+    available = []
+    for _, i in enumerate(__repo__):
+        if os.path.isdir(os.path.join(__exploit_path__, i)):
+            available.append(i)
+    return available
+
+
 # fetch file from git
 def fetch_file_git(url, path):
     pygit2.clone_repository(str(url).replace('git+', ''), path)
@@ -210,17 +218,18 @@ def fetch_file(url, path):
         check_dir(direc)
 
         if check_file(path):
-            return warn(f"{filename} already exists -- skipping")
-
-        info(f"downloading {filename}")
-        if str(url).startswith('git+'):
-            fetch_file_git(url.replace("git+", ""), path)
+            warn(f"{filename} already exists -- skipping")
         else:
-            fetch_file_http(url, path)
-            if __decompress__:
-                decompress(path)
-                if __remove__:
-                    remove(path)
+            info(f"downloading {filename}")
+            if str(url).startswith('git+'):
+                fetch_file_git(url.replace("git+", ""),
+                               path.replace(".git", ""))
+            else:
+                fetch_file_http(url, path)
+        if __decompress__ and not str(url).startswith('git+'):
+            decompress(path)
+            if __remove__:
+                remove(path)
     except KeyboardInterrupt:
         pass
     except Exception as ex:
@@ -240,7 +249,7 @@ def fetch(id):
 
         sync_packetstorm()
 
-        if id is 0:
+        if id == 0:
             for _, i in enumerate(__repo__):
                 base_path = f"{__exploit_path__}/{i}"
                 check_dir(base_path)
@@ -268,32 +277,109 @@ def update_git(name, path):
         repo.stash(repo.default_signature)
         repo.remotes['origin'].fetch()
     except Exception as ex:
-        err(f"unable to update archive: {str(ex)}")
+        err(f"unable to update {name}: {str(ex)}")
     finally:
         unblock_stdout()
 
 
-def update_exploitdb():
-    pass
-
-
 def update_packetstorm():
-    pass
+    global __exploit_path__
+    global __repo__
+    global __executer__
+    info("updating packetstormsecurity.com")
+    packetstorm_repo = []
+    current_year = date.today().strftime("%Y")
+    current_month = date.today().strftime("%m")
+
+    for year in range(1999, int(current_year) + 1):
+        for month in range(1, int(current_month) + 1):
+            url = f"http://dl.packetstormsecurity.com/{str(year)[-2:]}{month:02d}-exploits/{str(year)[-2:]}{month:02d}-exploits.tgz"
+            packetstorm_repo.append(url)
+
+    dirs = [str(x[0]).split('/')[-1]
+            for x in os.walk(f"{__exploit_path__}/packetstormsecurity.com")]
+
+    for _, d in enumerate(dirs):
+        url = f"http://dl.packetstormsecurity.com/{d}/{d}.tgz"
+        if url in packetstorm_repo:
+            packetstorm_repo.remove(url)
+    base_path = f"{__exploit_path__}/packetstormsecurity.com"
+    for _, url in enumerate(packetstorm_repo):
+        res = requests.head(url, allow_redirects=True)
+        if res.url != url and res.url.endswith("404.html"):
+            continue
+        __executer__.submit(
+            fetch_file, url, f"{base_path}/{str(url).split('/')[-1]}")
+
+
+def update_exploitdb():
+    global __exploit_path__
+    global __repo__
+    global __executer__
+    info("updating exploit-db")
+    base_path = f"{__exploit_path__}/exploit-db"
+    for _, i in enumerate(__repo__["exploit-db"]):
+        if os.path.exists(f"{base_path}/{i}"):
+            __executer__.submit(update_git, i, f"{base_path}/{i}")
+        else:
+            __executer__.submit(fetch_file_git, i, f"{base_path}/{i}")
+
+
+def update_generic(site):
+    global __exploit_path__
+    global __repo__
+    global __executer__
+    info(f"updating {site}")
+    base_path = f"{__exploit_path__}/{site}"
+    for _, i in enumerate(__repo__[site]):
+        path = f"{base_path}/{str(i).split('/')[-1]}"
+        if os.path.exists(str(path).split('.')[0]):
+            continue
+        __executer__.submit(
+            fetch_file, i, path)
 
 
 def update(id):
-    pass
+    funcs = []
+    installed = get_installed()
+    funcs_dict = {
+        "exploit-db": [update_exploitdb],
+        "packetstormsecurity.com": [update_packetstorm],
+        "m00-exploits": [update_generic, "m00-exploits"],
+        "lsd-pl-exploits": [update_generic, "lsd-pl-exploits"]
+    }
+    try:
+        if id > installed.__len__():
+            raise OverflowError("id is too big")
+        elif id < 0:
+            raise IndexError("id is too small")
+
+        if id == 0:
+            for _, i in enumerate(installed):
+                funcs.append(funcs_dict[i])
+        else:
+            funcs.append(funcs_dict[installed[id - 1]])
+        for _, i in enumerate(funcs):
+            if i.__len__() == 1:
+                i[0]()
+            else:
+                i[0](i[1])
+    except Exception as ex:
+        err(f"unable to update: {str(ex)}")
 
 
 def print_sites(func):
+    global __repo__
     try:
+        available = []
+        if func.__name__ == "fetch":
+            available = __repo__
+        elif func.__name__ == "update":
+            available = get_installed()
+        if available.__len__() <= 0:
+            raise EnvironmentError("No archive available")
         info("available exploit sites and archives:\n")
         print("    > 0   - all exploit sites")
-        available = ()
-        if func.__name__ is "fetch":
-            available = __repo__
-        elif func.__name__ is "update":
-            available = ("exploit-db", "packetstormsecurity.org")
         for i, j in enumerate(available):
             print(f"    > {i + 1}   - {j}")
     except Exception as ex:
@@ -360,16 +446,18 @@ def parse_args(argv):
         for opt, arg in opts:
             if opt == '-f':
                 if arg == '?':
-                    print_sites(fetch)
-                    exit(0)
-                __operation__ = fetch
-                __arg__ = to_int(arg)
+                    __operation__ = print_sites
+                    __arg__ = fetch
+                else:
+                    __operation__ = fetch
+                    __arg__ = to_int(arg)
             elif opt == '-u':
                 if arg == '?':
-                    print_sites(update)
-                    exit(0)
-                __operation__ = update
-                __arg__ = to_int(arg)
+                    __operation__ = print_sites
+                    __arg__ = update
+                else:
+                    __operation__ = update
+                    __arg__ = to_int(arg)
             elif opt == '-s':
                 __operation__ = search
                 __arg__ = arg
@@ -411,6 +499,7 @@ def main(argv):
     global __executer__
     global __max_trds__
     global __repo_file__
+    global __exploit_path__
     banner()
 
     __repo_file__ = f"{os.path.dirname(os.path.realpath(__file__))}/repo.json"
@@ -422,6 +511,7 @@ def main(argv):
 
     if __operation__ == None:
         err("no operation selected")
+        err("WTF?! mount /dev/brain")
         return -1
 
     if __args__ == None:
@@ -455,6 +545,7 @@ if __name__ == "__main__":
         from shutil import copyfileobj, rmtree, chown
         from concurrent.futures import ThreadPoolExecutor
     except Exception as ex:
-        print(f"Error while loading dependencies: {str(ex)}", file=sys.stderr)
+        print(
+            f"Error while loading dependencies: {str(ex)}", file=sys.stderr)
         exit(-1)
     sys.exit(main(sys.argv))

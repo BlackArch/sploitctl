@@ -24,14 +24,16 @@ options:
 
   -f <num>   - download exploit archives from chosen sites
              - ? to list sites
+  -u <num>   - update exploit archive from chosen site
+             - ? to list sites
   -d <dir>   - exploits base directory (default: /usr/share/exploits)
   -s <regex> - exploits to search using <regex> in base directory
-  -t <num>   - max parallel downloads (default: 5)
+  -t <num>   - max parallel downloads (default: 4)
 
 misc:
 
-  -A         - set useragent string
-  -P         - set proxy (format: proto://user:pass@host:port)
+  -A <str>   - set useragent string
+  -P <str>   - set proxy (format: proto://user:pass@host:port)
   -X         - decompress archive
   -R         - remove archive after decompression
   -V         - print version of sploitctl and exit
