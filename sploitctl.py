@@ -321,7 +321,7 @@ def update_exploitdb():
     global __executer__
     info("updating exploit-db")
     base_path = f"{__exploit_path__}/exploit-db"
-    for _, i in enumerate(__repo__["exploit-db"]):
+    for _, i in enumerate(__repo__["exploit-db"]["fetch"]):
         path = f"{base_path}/{str(i).split('/')[-1]}"
         if os.path.exists(path):
             name = path.split('/')[-1]
