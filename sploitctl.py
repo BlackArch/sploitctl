@@ -84,31 +84,55 @@ def banner():
     print(colored(__str_banner__, "red", attrs=["bold"]))
 
 
-# sync packetstorm urls
-def sync_packetstorm():
-    global __repo__
-    info("syncing packetstormsecurity.com archives")
-    current_year = date.today().strftime("%Y")
-    current_month = date.today().strftime("%m")
+def packetstorm_isValid(url):
+    res = requests.head(url, allow_redirects=True, headers={
+        'User-Agent': __useragent__}, proxies=__proxy__)
+    if res.url != url and res.url.endswith("404.html"):
+        return False
+    return True
 
-    for i in range(1999, int(current_year) + 1):
-        url = f"http://dl.packetstormsecurity.com/{str(i)[-2:]}12-exploits/{i}-exploits.tgz"
-        if url in __repo__["packetstormsecurity.com"]:
+
+def sync_packetstorm_yearly(start, end, repo):
+    for i in range(to_int(start), to_int(end)):
+        url = f"https://dl.packetstormsecurity.net/{str(i)[-2:]}12-exploits/{i}-exploits.tgz"
+        if url in repo:
             continue
-        res = requests.head(url, allow_redirects=True)
-        if res.url != url and res.url.endswith("404.html"):
+        if packetstorm_isValid(url):
+            repo.append(url)
+
+
+def sync_packetstorm_monthly(start, end, year, repo):
+    for i in range(to_int(start), to_int(end)):
+        url = f"https://dl.packetstormsecurity.net/{str(year)[-2:]}{i:02d}-exploits/{str(year)[-2:]}{i:02d}-exploits.tgz"
+        if url in repo:
             continue
-        __repo__["packetstormsecurity.com"].append(url)
-    if int(current_month) == 12:
-        return
-    for i in range(1, int(current_month) + 1):
-        url = f"http://dl.packetstormsecurity.com/{str(current_year)[-2:]}{i:02d}-exploits/{str(current_year)[-2:]}{i:02d}-exploits.tgz"
-        if url in __repo__["packetstormsecurity.com"]:
-            continue
-        res = requests.head(url, allow_redirects=True)
-        if res.url != url and res.url.endswith("404.html"):
-            continue
-        __repo__["packetstormsecurity.com"].append(url)
+        if packetstorm_isValid(url):
+            repo.append(url)
+
+
+# sync packetstorm urls
+def sync_packetstorm(update=False):
+    global __repo__
+    info("syncing packetstormsecurity archives")
+    current_year = to_int(date.today().strftime("%Y"))
+    current_month = to_int(date.today().strftime("%m"))
+
+    if update:
+        sync_packetstorm_monthly(10, 13, 1999, __repo__[
+            "packetstormsecurity"]["update"])
+        for i in range(2000, current_year):
+            sync_packetstorm_monthly(
+                1, 13, i, __repo__["packetstormsecurity"]["update"])
+        sync_packetstorm_monthly(
+            1, current_month + 1,
+            current_year, __repo__["packetstormsecurity"]["update"])
+    else:
+        sync_packetstorm_yearly(1999, current_year + 1,
+                                __repo__["packetstormsecurity"]["fetch"])
+        if current_month < 12:
+            sync_packetstorm_monthly(
+                1, current_month + 1,
+                current_year, __repo__["packetstormsecurity"]["fetch"])
 
 
 # decompress file
@@ -205,31 +229,30 @@ def fetch_file_http(url, path):
 def fetch_file(url, path):
     global __decompress__
 
-    filepath = path.replace(".git", "")
-    filename = os.path.basename(filepath)
-    check_dir(os.path.dirname(filepath))
-
     try:
-        if check_file(filepath):
+        filename = os.path.basename(path)
+        check_dir(os.path.dirname(path))
+
+        if check_file(path):
             warn(f"{filename} already exists -- skipping")
         else:
             info(f"downloading {filename}")
             if str(url).startswith('git+'):
-                fetch_file_git(url.replace("git+", ""), filepath)
+                fetch_file_git(url.replace("git+", ""), path)
             else:
-                fetch_file_http(url, filepath)
+                fetch_file_http(url, path)
         if __decompress__ and not str(url).startswith('git+'):
-            decompress(filepath)
+            decompress(path)
             if __remove__:
-                remove(filepath)
+                remove(path)
     except KeyboardInterrupt:
         pass
     except Exception as ex:
         err(f"Error while downloading {url}: {str(ex)}")
-        remove(filepath)
+        remove(path)
 
 
-# wrapper around fetch filed
+# wrapper around fetch_file
 def fetch(id):
     global __repo__
     global __executer__
@@ -240,21 +263,21 @@ def fetch(id):
         elif id < 0:
             raise IndexError("id is too small")
 
-        if (id == 0) or (repo_list[id - 1] == "packetstormsecurity.com"):
+        if (id == 0) or (repo_list[id - 1] == "packetstormsecurity"):
             sync_packetstorm()
 
         if id == 0:
             for _, i in enumerate(__repo__):
                 base_path = f"{__exploit_path__}/{i}"
                 check_dir(base_path)
-                for _, j in enumerate(__repo__[i]):
+                for _, j in enumerate(__repo__[i]['fetch']):
                     __executer__.submit(
                         fetch_file, j, f"{base_path}/{str(j).split('/')[-1]}")
         else:
             site = repo_list[id - 1]
             base_path = f"{__exploit_path__}/{site}"
             check_dir(base_path)
-            for _, i in enumerate(__repo__[site]):
+            for _, i in enumerate(__repo__[site]['fetch']):
                 __executer__.submit(
                     fetch_file, i, f"{base_path}/{str(i).split('/')[-1]}")
         __executer__.shutdown(wait=True)
@@ -291,43 +314,6 @@ def update_git(name, path):
         err(f"unable to update {name}: {str(ex)}")
 
 
-# update packetstorm exploits
-def update_packetstorm():
-    global __exploit_path__
-    global __repo__
-    global __executer__
-    info("updating packetstormsecurity.com")
-    packetstorm_repo = []
-    current_year = date.today().strftime("%Y")
-    current_month = date.today().strftime("%m")
-
-    for year in range(1999, int(current_year) + 1):
-        for month in range(1, 13):
-            url = f"http://dl.packetstormsecurity.com/{str(year)[-2:]}{month:02d}-exploits/{str(year)[-2:]}{month:02d}-exploits.tgz"
-            packetstorm_repo.append(url)
-            if (year == int(current_year)) and (month > int(current_month)):
-                break
-
-    dirs = [str(x[0]).split('/')[-1]
-            for x in os.walk(f"{__exploit_path__}/packetstormsecurity.com")]
-
-    for _, d in enumerate(dirs):
-        url = f"http://dl.packetstormsecurity.com/{d}/{d}.tgz"
-        if url in packetstorm_repo:
-            packetstorm_repo.remove(url)
-
-    base_path = f"{__exploit_path__}/packetstormsecurity.com"
-
-    def dl_if_valid(url):
-        res = requests.head(url, allow_redirects=True)
-        if res.url != url and res.url.endswith("404.html"):
-            return
-        fetch_file(url, f"{base_path}/{str(url).split('/')[-1]}")
-
-    for _, url in enumerate(packetstorm_repo):
-        __executer__.submit(dl_if_valid, url)
-
-
 # update exploit-db exploits
 def update_exploitdb():
     global __exploit_path__
@@ -336,7 +322,7 @@ def update_exploitdb():
     info("updating exploit-db")
     base_path = f"{__exploit_path__}/exploit-db"
     for _, i in enumerate(__repo__["exploit-db"]):
-        path = f"{base_path}/{str(i).split('/')[-1]}".replace(".git", '')
+        path = f"{base_path}/{str(i).split('/')[-1]}"
         if os.path.exists(path):
             name = path.split('/')[-1]
             __executer__.submit(update_git, name, path)
@@ -351,7 +337,15 @@ def update_generic(site):
     global __executer__
     info(f"updating {site}")
     base_path = f"{__exploit_path__}/{site}"
-    for _, i in enumerate(__repo__[site]):
+    repo = __repo__[site]['fetch']
+
+    if "update" in __repo__[site]:
+        repo = __repo__[site]["update"]
+
+    if site == "packetstormsecurity":
+        sync_packetstorm(update=True)
+
+    for _, i in enumerate(repo):
         path = f"{base_path}/{str(i).split('/')[-1]}"
         if os.path.exists(str(path).split('.')[0]):
             continue
@@ -365,7 +359,7 @@ def update(id):
     installed = get_installed()
     funcs_dict = {
         "exploit-db": [update_exploitdb],
-        "packetstormsecurity.com": [update_packetstorm],
+        "packetstormsecurity": [update_generic, "packetstormsecurity"],
         "m00-exploits": [update_generic, "m00-exploits"],
         "lsd-pl-exploits": [update_generic, "lsd-pl-exploits"]
     }
