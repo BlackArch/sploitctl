@@ -17,40 +17,40 @@
 ################################################################################
 
 
-__organization__ = "blackarch.org"
-__license__ = "GPLv3"
-__version__ = "3.0.0-beta"  # sploitctl.py version
-__project__ = "sploitctl"
+__organization__: str = "blackarch.org"
+__license__: str = "GPLv3"
+__version__: str = "3.0.0-beta"  # sploitctl.py version
+__project__: str = "sploitctl"
 
 # default exploit base directory
-__exploit_path__ = "/usr/share/exploits"
+__exploit_path__: str = "/usr/share/exploits"
 
-__decompress__ = False
-__remove__ = False
-__max_trds__ = 4
-__useragent__ = "Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0"
+__decompress__: bool = False
+__remove__: bool = False
+__max_trds__: int = 4
+__useragent__: str = "Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0"
 __executer__ = None
-__chunk_size__ = 1024
-__proxy__ = {}
+__chunk_size__: int = 1024
+__proxy__: dict = {}
 
-__repo__ = {}
-__repo_file__ = None
+__repo__: dict = {}
+__repo_file__: str = ""
 
 
-def err(string):
+def err(string: str) -> None:
     print(colored("[-]", "red", attrs=["bold"]), string, file=sys.stderr)
 
 
-def warn(string):
+def warn(string: str) -> None:
     print(colored("[!]", "yellow", attrs=["bold"]), string)
 
 
-def info(string):
+def info(string: str) -> None:
     print(colored("[*]", "blue", attrs=["bold"]), string)
 
 
 # usage and help
-def usage():
+def usage() -> None:
     __usage__ = "usage:\n\n"
     __usage__ += f"  {__project__} -f <arg> [options] | -u <arg> [options] | -s <arg> [options] | <misc>\n\n"
     __usage__ += "options:\n\n"
@@ -73,53 +73,57 @@ def usage():
 
 
 # print version
-def version():
+def version() -> None:
+    global __project__
+    global __version__
     __str_version__ = f"{__project__} v{ __version__}"
     print(__str_version__)
 
 
 # leet banner, very important
-def banner():
+def banner() -> None:
+    global __project__
+    global __organization__
     __str_banner__ = f"--==[ {__project__} by {__organization__} ]==--\n"
     print(colored(__str_banner__, "red", attrs=["bold"]))
 
 
-def packetstorm_isValid(url):
-    res = requests.head(url, allow_redirects=True, headers={
-        'User-Agent': __useragent__}, proxies=__proxy__)
-    if res.url != url and res.url.endswith("404.html"):
-        return False
-    return True
+def check_packetstorm(url: str) -> bool:
+    global __proxy__
+    res = requests.head(url, allow_redirects=True,
+                        headers={'User-Agent': __useragent__},
+                        proxies=__proxy__)
+    return not res.url.endswith("404.html")
 
 
-def sync_packetstorm_yearly(start, end, repo):
-    for i in range(to_int(start), to_int(end)):
+def sync_packetstorm_yearly(start: int, end: int, repo: list) -> None:
+    for i in range(start, end):
         url = f"https://dl.packetstormsecurity.net/{str(i)[-2:]}12-exploits/{i}-exploits.tgz"
         if url in repo:
             continue
-        if packetstorm_isValid(url):
+        if check_packetstorm(url):
             repo.append(url)
 
 
-def sync_packetstorm_monthly(start, end, year, repo):
-    for i in range(to_int(start), to_int(end)):
+def sync_packetstorm_monthly(start: int, end: int, year: int, repo: list) -> None:
+    for i in range(start, end):
         url = f"https://dl.packetstormsecurity.net/{str(year)[-2:]}{i:02d}-exploits/{str(year)[-2:]}{i:02d}-exploits.tgz"
         if url in repo:
             continue
-        if packetstorm_isValid(url):
+        if check_packetstorm(url):
             repo.append(url)
 
 
 # sync packetstorm urls
-def sync_packetstorm(update=False):
+def sync_packetstorm(update: bool = False) -> None:
     global __repo__
-    info("syncing packetstormsecurity archives")
-    current_year = to_int(date.today().strftime("%Y"))
-    current_month = to_int(date.today().strftime("%m"))
+    info("syncing packetstormsecurity repository")
+    current_year = int(date.today().strftime("%Y"))
+    current_month = int(date.today().strftime("%m"))
 
     if update:
-        sync_packetstorm_monthly(10, 13, 1999, __repo__[
-            "packetstormsecurity"]["update"])
+        sync_packetstorm_monthly(
+            10, 13, 1999, __repo__["packetstormsecurity"]["update"])
         for i in range(2000, current_year):
             sync_packetstorm_monthly(
                 1, 13, i, __repo__["packetstormsecurity"]["update"])
@@ -136,7 +140,7 @@ def sync_packetstorm(update=False):
 
 
 # decompress file
-def decompress(infilename):
+def decompress(infilename: str) -> None:
     filename = os.path.basename(infilename)
     os.chdir(os.path.dirname(infilename))
     archive = None
@@ -155,7 +159,7 @@ def decompress(infilename):
 
 
 # remove file and ignore errors
-def remove(filename):
+def remove(filename: str) -> None:
     try:
         os.remove(filename)
     except:
@@ -163,7 +167,7 @@ def remove(filename):
 
 
 # check if directory exists
-def check_dir(dir_name):
+def check_dir(dir_name: str) -> None:
     try:
         if os.path.isdir(dir_name):
             return
@@ -171,17 +175,17 @@ def check_dir(dir_name):
             info(f"creating directory {dir_name}")
             os.mkdir(dir_name)
     except Exception as ex:
-        err(f"unable to change base directory: {str(ex)}")
+        err(f"unable to create directory: {str(ex)}")
         exit(-1)
 
 
 # check if file exists
-def check_file(path):
+def check_file(path: str) -> bool:
     return os.path.exists(f"{path}")
 
 
 # check if proxy is valid using regex
-def check_proxy(proxy):
+def check_proxy(proxy: dict) -> None:
     try:
         reg = r"^(http|https|socks4|socks5)://([a-zA-Z0-9._-]+:[a-zA-Z0-9._-]+@)?[a-z0-9.]+:[0-9]{1,5}$"
         if not re.match(reg, proxy['http']):
@@ -192,7 +196,7 @@ def check_proxy(proxy):
 
 
 # convert string to int
-def to_int(string):
+def check_int(string: str) -> int:
     try:
         return int(string)
     except:
@@ -201,7 +205,7 @@ def to_int(string):
 
 
 # get the lists of installed archives in the base path
-def get_installed():
+def get_installed() -> list:
     available = []
     for _, i in enumerate(__repo__):
         if os.path.isdir(os.path.join(__exploit_path__, i)):
@@ -210,12 +214,12 @@ def get_installed():
 
 
 # fetch file from git
-def fetch_file_git(url, path):
+def fetch_file_git(url: str, path: str) -> None:
     pygit2.clone_repository(url, path)
 
 
 # fetch file from http
-def fetch_file_http(url, path):
+def fetch_file_http(url: str, path: str) -> None:
     global __proxy__
     rq = requests.get(url, stream=True, headers={
         'User-Agent': __useragent__}, proxies=__proxy__)
@@ -226,7 +230,7 @@ def fetch_file_http(url, path):
 
 
 # fetch file wrapper
-def fetch_file(url, path):
+def fetch_file(url: str, path: str) -> None:
     global __decompress__
 
     try:
@@ -253,7 +257,7 @@ def fetch_file(url, path):
 
 
 # wrapper around fetch_file
-def fetch(id):
+def fetch(id: int) -> None:
     global __repo__
     global __executer__
     repo_list = list(__repo__.keys())
@@ -286,7 +290,7 @@ def fetch(id):
 
 
 # update git repository
-def update_git(name, path):
+def update_git(name: str, path: str) -> None:
     try:
         os.chdir(path)
         repo = pygit2.repository.Repository(path)
@@ -315,7 +319,7 @@ def update_git(name, path):
 
 
 # update exploit-db exploits
-def update_exploitdb():
+def update_exploitdb() -> None:
     global __exploit_path__
     global __repo__
     global __executer__
@@ -331,7 +335,7 @@ def update_exploitdb():
 
 
 # generic updater for m00-exploits and lsd-pl-exploits
-def update_generic(site):
+def update_generic(site: str) -> None:
     global __exploit_path__
     global __repo__
     global __executer__
@@ -353,7 +357,7 @@ def update_generic(site):
 
 
 # wrapper around update_* functions
-def update(id):
+def update(id: int) -> None:
     global __executer__
     funcs = []
     installed = get_installed()
@@ -385,7 +389,7 @@ def update(id):
 
 
 # print available sites for archive download
-def print_sites(func):
+def print_sites(func: callable) -> None:
     global __repo__
     try:
         available = []
@@ -405,7 +409,7 @@ def print_sites(func):
 
 
 # search exploits directory for regex match
-def search(regex):
+def search(regex: str) -> None:
     global __exploit_path__
     count = 0
     try:
@@ -421,7 +425,7 @@ def search(regex):
 
 
 # load repo.json file to __repo__
-def load_repo():
+def load_repo() -> None:
     global __repo__
     global __repo_file__
 
@@ -437,7 +441,7 @@ def load_repo():
 
 
 # flush __repo__ to disk
-def save_repo():
+def save_repo() -> None:
     global __repo__
     global __repo_file__
     try:
@@ -449,7 +453,7 @@ def save_repo():
         exit(-1)
 
 
-def parse_args(argv):
+def parse_args(argv: list) -> tuple:
     global __exploit_path__
     global __decompress__
     global __remove__
@@ -476,7 +480,7 @@ def parse_args(argv):
                     __arg__ = fetch
                 else:
                     __operation__ = fetch
-                    __arg__ = to_int(arg)
+                    __arg__ = check_int(arg)
                 opFlag += 1
             elif opt == '-u':
                 if arg == '?':
@@ -484,7 +488,7 @@ def parse_args(argv):
                     __arg__ = update
                 else:
                     __operation__ = update
-                    __arg__ = to_int(arg)
+                    __arg__ = check_int(arg)
                 opFlag += 1
             elif opt == '-s':
                 __operation__ = search
@@ -495,7 +499,7 @@ def parse_args(argv):
                 check_dir(dirname)
                 __exploit_path__ = dirname
             elif opt == '-t':
-                __max_trds__ = to_int(arg)
+                __max_trds__ = check_int(arg)
                 if __max_trds__ <= 0:
                     raise Exception("threads number can't be less than 1")
             elif opt == '-A':
@@ -528,7 +532,7 @@ def parse_args(argv):
 
 
 # controller and program flow
-def main(argv):
+def main(argv: list) -> int:
     global __executer__
     global __max_trds__
     global __repo_file__
@@ -576,7 +580,6 @@ if __name__ == "__main__":
         from termcolor import colored
         from concurrent.futures import ThreadPoolExecutor
     except Exception as ex:
-        print(
-            f"Error while loading dependencies: {str(ex)}", file=sys.stderr)
+        print(f"Error while loading dependencies: {str(ex)}", file=sys.stderr)
         exit(-1)
     sys.exit(main(sys.argv))
