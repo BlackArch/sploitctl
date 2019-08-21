@@ -5,7 +5,7 @@
 #-d <dir>   - exploits base directory (default: /usr/share/exploits).
 #-s <regex> - exploits to search using <regex> in base directory.
 #-t <num>   - max parallel downloads (default: 4).
-#-r <num>   - max retry failed downloads (default: 3)
+#-r <num>   - max retry failed downloads (default: 3).
 #-A         - set useragent string.
 #-P         - set proxy (format: proto://user:pass@host:port).
 #-X         - decompress archive.
