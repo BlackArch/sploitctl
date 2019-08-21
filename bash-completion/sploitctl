@@ -1,10 +1,11 @@
 # Attention: this is a Bash Script, not `sh`.
 
 #_sploitctl_options="-f <num>  - download exploit archives from chosen sites.
-#-u <num>   - update exploit archive from chosen site.
+#-u <num>   - update exploit archive from chosen installed archive.
 #-d <dir>   - exploits base directory (default: /usr/share/exploits).
 #-s <regex> - exploits to search using <regex> in base directory.
-#-t <num>   - max parallel downloads (default: 5).
+#-t <num>   - max parallel downloads (default: 4).
+#-r <num>   - max retry failed downloads (default: 3)
 #-A         - set useragent string.
 #-P         - set proxy (format: proto://user:pass@host:port).
 #-X         - decompress archive.
@@ -16,7 +17,7 @@ _sploitctl()
 {
     local current options
 
-    options="-f -u -d -s -t -A -X -X -R -V -H"
+    options="-f -u -d -s -t -r -A -X -X -R -V -H"
 
     current="${COMP_WORDS[COMP_CWORD]}"
 

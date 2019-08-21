@@ -15,7 +15,7 @@ Script to fetch, install, update and search exploit archives from well-known sit
 .IP
       \- ? to list sites
 .HP
-\fB\-u\fR <num>     \- update exploit archive from chosen site 
+\fB\-u\fR <num>     \- update exploit archive from chosen installed archive 
 .IP
       \- ? to list sites
 .HP
@@ -24,8 +24,8 @@ Script to fetch, install, update and search exploit archives from well-known sit
 \fB\-s\fR <regex>   \- exploits to search using <regex> in base directory
 .HP
 \fB\-t\fR <num>     \- max parallel downloads (default: 4)
-.SH MISC
-.PP
+.HP
+\fB\-r\fR <num>     \- max retry failed downloads (default: 3)
 .HP
 \fB\-A\fR <str>     \- set useragent string
 .HP
@@ -34,7 +34,58 @@ Script to fetch, install, update and search exploit archives from well-known sit
 \fB\-X\fR           \- decompress archive
 .HP
 \fB\-R\fR           \- remove archive after decompression
+.SH MISC
+.PP
 .HP
-\fB\-V\fR <file>    \- print version of sploitctl and exit
+\fB\-V\fR           \- print version of sploitctl and exit
 .HP
-\fB\-H\fR <file>    \- print help and exit
+\fB\-H\fR           \- print help and exit
+.SH EXAMPLES
+.PP
+.HP
+# download and decompress all exploit archives and remove archive
+.HP
+$ sploitctl \fB\-f\fR 0 \fB\-XR\fR
+.HP
+# download all exploits in packetstorm archive
+.HP
+$ sploitctl \fB\-f\fR 4
+.HP
+# list all available exploit archives
+.HP
+$ sploitctl \fB\-f\fR ?
+.HP
+# download and decompress all exploits in m00-exploits archive
+.HP
+$ sploitctl \fB\-f\fR 2 \fB\-XR\fR
+.HP
+# download all exploits archives using 20 threads and 4 retries
+.HP
+$ sploitctl \fB\-r\fR 4 \fB\-f\fR 0 \fB\-t\fR 20
+.HP
+# download lsd-pl-exploits to "~/exploits" directory
+.HP
+$ sploitctl \fB\-f\fR 3 \fB\-d\fR \fI\,~/exploits\/\fP
+.HP
+# download all exploits with using tor socks5 proxy
+.HP
+$ sploitctl \fB\-f\fR 0 \fB\-P\fR "socks5://127.0.0.1:9050"
+.HP
+# download all exploits with using http proxy and noleak useragent
+.HP
+$ sploitctl \fB\-f\fR 0 \fB\-P\fR "http://127.0.0.1:9060" \fB\-A\fR "noleak"
+.HP
+# list all installed exploits available for download
+.HP
+$ sploitctl \fB\-u\fR ?
+.HP
+# update all installed exploits with using http proxy and noleak useragent
+.HP
+$ sploitctl \fB\-u\fR 0 \fB\-P\fR "http://127.0.0.1:9060" \fB\-A\fR "noleak" \fB\-XR\fR 
+.PP
+.SH NOTE
+.PP
+sploitctl update's id are relative to the installed archives
+and are not static, so by installing an exploit archive it will
+show up in the update section so always do a -u ? before
+updating.

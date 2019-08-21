@@ -32,6 +32,7 @@ __useragent__: str = "Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Fi
 __executer__ = None
 __chunk_size__: int = 1024
 __proxy__: dict = {}
+__max_retry__: int = 3
 
 __repo__: dict = {}
 __repo_file__: str = ""
@@ -51,23 +52,53 @@ def info(string: str) -> None:
 
 # usage and help
 def usage() -> None:
+    global __project__
+    global __exploit_path__
+    global __max_trds__
+    global __max_retry__
     __usage__ = "usage:\n\n"
     __usage__ += f"  {__project__} -f <arg> [options] | -u <arg> [options] | -s <arg> [options] | <misc>\n\n"
     __usage__ += "options:\n\n"
     __usage__ += "  -f <num>   - download exploit archives from chosen sites\n"
     __usage__ += "             - ? to list sites\n"
-    __usage__ += "  -u <num>   - update exploit archive from chosen site\n"
-    __usage__ += "             - ? to list sites\n"
-    __usage__ += f"  -d <dir>   - exploits base directory (default: {__exploit_path__})\n"
+    __usage__ += "  -u <num>   - update exploit archive from chosen installed archive\n"
+    __usage__ += "             - ? to list downloaded archives\n"
+    __usage__ += "  -d <dir>   - exploits base directory (default: /usr/share/exploits)\n"
     __usage__ += "  -s <regex> - exploits to search using <regex> in base directory\n"
-    __usage__ += f"  -t <num>   - max parallel downloads (default: {__max_trds__})\n\n"
-    __usage__ += "misc:\n\n"
+    __usage__ += "  -t <num>   - max parallel downloads (default: 4)\n"
+    __usage__ += "  -r <num>   - max retry failed downloads (default: 3)\n"
     __usage__ += "  -A <str>   - set useragent string\n"
     __usage__ += "  -P <str>   - set proxy (format: proto://user:pass@host:port)\n"
     __usage__ += "  -X         - decompress archive\n"
-    __usage__ += "  -R         - remove archive after decompression\n"
+    __usage__ += "  -R         - remove archive after decompression\n\n"
+    __usage__ += "misc:\n\n"
     __usage__ += f"  -V         - print version of {__project__} and exit\n"
-    __usage__ += "  -H         - print this help and exit\n"
+    __usage__ += "  -H         - print this help and exit\n\n"
+    __usage__ += "example:\n\n"
+    __usage__ += "  # download and decompress all exploit archives and remove archive\n"
+    __usage__ += f"  $ {__project__} -f 0 -XR\n\n"
+    __usage__ += "  # download all exploits in packetstorm archive\n"
+    __usage__ += f"  $ {__project__} -f 4\n\n"
+    __usage__ += "  # list all available exploit archives\n"
+    __usage__ += f"  $ {__project__} -f ?\n\n"
+    __usage__ += "  # download and decompress all exploits in m00-exploits archive\n"
+    __usage__ += f"  $ {__project__} -f 2 -XR\n\n"
+    __usage__ += "  # download all exploits archives using 20 threads and 4 retries\n"
+    __usage__ += f"  $ {__project__} -r 4 -f 0 -t 20\n\n"
+    __usage__ += "  # download lsd-pl-exploits to \"~/exploits\" directory\n"
+    __usage__ += f"  $ {__project__} -f 3 -d ~/exploits\n\n"
+    __usage__ += "  # download all exploits with using tor socks5 proxy\n"
+    __usage__ += f"  $ {__project__} -f 0 -P \"socks5://127.0.0.1:9050\"\n\n"
+    __usage__ += "  # download all exploits with using http proxy and noleak useragent\n"
+    __usage__ += f"  $ {__project__} -f 0 -P \"http://127.0.0.1:9060\" -A \"noleak\"\n\n"
+    __usage__ += "  # list all installed exploits available for download\n"
+    __usage__ += f"  $ {__project__} -u ?\n\n"
+    __usage__ += "  # update all installed exploits with using http proxy and noleak useragent\n"
+    __usage__ += f"  $ {__project__} -u 0 -P \"http://127.0.0.1:9060\" -A \"noleak\" -XR\n\n"
+    __usage__ += "notes:\n\n"
+    __usage__ += f"  * {__project__} update's id are relative to the installed archives\n"
+    __usage__ += "    and are not static, so by installing an exploit archive it will\n"
+    __usage__ += "    show up in the update section so always do a -u ? before updating.\n"
 
     print(__usage__)
 
@@ -117,26 +148,26 @@ def sync_packetstorm_monthly(start: int, end: int, year: int, repo: list) -> Non
 # sync packetstorm urls
 def sync_packetstorm(update: bool = False) -> None:
     global __repo__
-    info("syncing packetstormsecurity repository")
+    info("syncing packetstorm repository")
     current_year = int(date.today().strftime("%Y"))
     current_month = int(date.today().strftime("%m"))
 
     if update:
         sync_packetstorm_monthly(
-            10, 13, 1999, __repo__["packetstormsecurity"]["update"])
+            10, 13, 1999, __repo__["packetstorm"]["update"])
         for i in range(2000, current_year):
             sync_packetstorm_monthly(
-                1, 13, i, __repo__["packetstormsecurity"]["update"])
+                1, 13, i, __repo__["packetstorm"]["update"])
         sync_packetstorm_monthly(
             1, current_month + 1,
-            current_year, __repo__["packetstormsecurity"]["update"])
+            current_year, __repo__["packetstorm"]["update"])
     else:
         sync_packetstorm_yearly(1999, current_year + 1,
-                                __repo__["packetstormsecurity"]["fetch"])
+                                __repo__["packetstorm"]["fetch"])
         if current_month < 12:
             sync_packetstorm_monthly(
                 1, current_month + 1,
-                current_year, __repo__["packetstormsecurity"]["fetch"])
+                current_year, __repo__["packetstorm"]["fetch"])
 
 
 # decompress file
@@ -232,28 +263,31 @@ def fetch_file_http(url: str, path: str) -> None:
 # fetch file wrapper
 def fetch_file(url: str, path: str) -> None:
     global __decompress__
+    global __max_retry__
 
-    try:
-        filename = os.path.basename(path)
-        check_dir(os.path.dirname(path))
+    for _ in range(0, __max_retry__ + 1):
+        try:
+            filename = os.path.basename(path)
+            check_dir(os.path.dirname(path))
 
-        if check_file(path):
-            warn(f"{filename} already exists -- skipping")
-        else:
-            info(f"downloading {filename}")
-            if str(url).startswith('git+'):
-                fetch_file_git(url.replace("git+", ""), path)
+            if check_file(path):
+                warn(f"{filename} already exists -- skipping")
             else:
-                fetch_file_http(url, path)
-        if __decompress__ and not str(url).startswith('git+'):
-            decompress(path)
-            if __remove__:
-                remove(path)
-    except KeyboardInterrupt:
-        pass
-    except Exception as ex:
-        err(f"Error while downloading {url}: {str(ex)}")
-        remove(path)
+                info(f"downloading {filename}")
+                if str(url).startswith('git+'):
+                    fetch_file_git(url.replace("git+", ""), path)
+                else:
+                    fetch_file_http(url, path)
+            if __decompress__ and not str(url).startswith('git+'):
+                decompress(path)
+                if __remove__:
+                    remove(path)
+            break
+        except KeyboardInterrupt:
+            pass
+        except Exception as ex:
+            err(f"Error while downloading {url}: {str(ex)}")
+            remove(path)
 
 
 # wrapper around fetch_file
@@ -267,7 +301,7 @@ def fetch(id: int) -> None:
         elif id < 0:
             raise IndexError("id is too small")
 
-        if (id == 0) or (repo_list[id - 1] == "packetstormsecurity"):
+        if (id == 0) or (repo_list[id - 1] == "packetstorm"):
             sync_packetstorm()
 
         if id == 0:
@@ -346,7 +380,7 @@ def update_generic(site: str) -> None:
     if "update" in __repo__[site]:
         repo = __repo__[site]["update"]
 
-    if site == "packetstormsecurity":
+    if site == "packetstorm":
         sync_packetstorm(update=True)
 
     for _, i in enumerate(repo):
@@ -363,7 +397,7 @@ def update(id: int) -> None:
     installed = get_installed()
     funcs_dict = {
         "exploit-db": [update_exploitdb],
-        "packetstormsecurity": [update_generic, "packetstormsecurity"],
+        "packetstorm": [update_generic, "packetstorm"],
         "m00-exploits": [update_generic, "m00-exploits"],
         "lsd-pl-exploits": [update_generic, "lsd-pl-exploits"]
     }
@@ -460,12 +494,13 @@ def parse_args(argv: list) -> tuple:
     global __max_trds__
     global __useragent__
     global __proxy__
+    global __max_retry__
     __operation__ = None
     __arg__ = None
     opFlag = 0
 
     try:
-        opts, _ = getopt.getopt(argv[1:], "f:u:s:d:t:A:P:VHXDR")
+        opts, _ = getopt.getopt(argv[1:], "f:u:s:d:t:r:A:P:VHXDR")
 
         if opts.__len__() <= 0:
             __operation__ = usage
@@ -502,6 +537,10 @@ def parse_args(argv: list) -> tuple:
                 __max_trds__ = check_int(arg)
                 if __max_trds__ <= 0:
                     raise Exception("threads number can't be less than 1")
+            elif opt == '-r':
+                __max_retry__ = check_int(arg)
+                if __max_retry__ < 0:
+                    raise Exception("retry number can't be less than 0")
             elif opt == '-A':
                 __useragent__ = arg
             elif opt == '-P':
