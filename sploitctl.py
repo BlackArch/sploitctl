@@ -22,7 +22,7 @@
 
 __organization__: str = "blackarch.org"
 __license__: str = "GPLv3"
-__version__: str = "3.0.0-beta"  # sploitctl.py version
+__version__: str = "3.0.0"  # sploitctl.py version
 __project__: str = "sploitctl"
 
 # default exploit base directory
