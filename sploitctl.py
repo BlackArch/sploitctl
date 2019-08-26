@@ -22,7 +22,7 @@
 
 __organization__: str = "blackarch.org"
 __license__: str = "GPLv3"
-__version__: str = "3.0.0"  # sploitctl.py version
+__version__: str = "3.0.1-dev"  # sploitctl.py version
 __project__: str = "sploitctl"
 
 # default exploit base directory
@@ -593,6 +593,9 @@ def main(argv: list) -> int:
         err("no operation selected")
         err("WTF?! mount /dev/brain")
         return -1
+
+    if __operation__ in (fetch, update):
+        check_dir(__exploit_path__)
 
     if __args__ == None:
         __operation__()
