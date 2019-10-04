@@ -46,7 +46,6 @@ PROJECT: str = "sploitctl"
 
 exploit_path: str = "/usr/share/exploits"  # default exploit base directory
 exploit_repo: dict = {}
-exploit_repo_file: str = ""
 
 decompress_archive: bool = False
 remove_archive: bool = False
@@ -57,6 +56,7 @@ proxy_settings: dict = {}
 max_retry: int = 3
 
 CHUNK_SIZE: int = 1024
+REPO_FILE: str = f"{os.path.dirname(os.path.realpath(__file__))}/repo.json"
 
 
 def err(string: str) -> None:
@@ -481,12 +481,12 @@ def search(regex: str) -> None:
 # load repo.json file to exploit_repo
 def load_repo() -> None:
     global exploit_repo
-    global exploit_repo_file
+    global REPO_FILE
 
     try:
-        if not os.path.isfile(exploit_repo_file):
+        if not os.path.isfile(REPO_FILE):
             raise FileNotFoundError("Repo file not found")
-        fp = open(exploit_repo_file, 'r')
+        fp = open(REPO_FILE, 'r')
         exploit_repo = json.load(fp)
         fp.close()
     except Exception as ex:
@@ -497,9 +497,9 @@ def load_repo() -> None:
 # flush exploit_repo to disk
 def save_repo() -> None:
     global exploit_repo
-    global exploit_repo_file
+    global REPO_FILE
     try:
-        fp = open(exploit_repo_file, 'w')
+        fp = open(REPO_FILE, 'w')
         json.dump(exploit_repo, fp)
         fp.close()
     except Exception as ex:
@@ -594,11 +594,9 @@ def parse_args(argv: list) -> tuple:
 def main(argv: list) -> int:
     global parallel_executer
     global max_trds
-    global exploit_repo_file
+    global REPO_FILE
     global exploit_path
     banner()
-
-    exploit_repo_file = f"{os.path.dirname(os.path.realpath(__file__))}/repo.json"
 
     load_repo()
 
