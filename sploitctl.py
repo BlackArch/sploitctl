@@ -41,7 +41,7 @@ except Exception as ex:
 
 ORGANIZATION: str = "blackarch.org"
 LICENSE: str = "GPLv3"
-VERSION: str = "3.0.1-dev"  # sploitctl.py version
+VERSION: str = "3.0.1"  # sploitctl.py version
 PROJECT: str = "sploitctl"
 
 exploit_path: str = "/usr/share/exploits"  # default exploit base directory
