@@ -3,7 +3,7 @@ FROM python:buster
 LABEL version="3.0.2-dev" \
     author="Author BlackArch (https://github.com/BlackArch)" \
     docker_build="docker build -t blackarch/sploitctl:3.0.2-dev ." \
-    docker_run_basic="docker run --rm blackarch/sploitctl:3.0.2-dev -h"
+    docker_run_basic="docker run --rm blackarch/sploitctl:3.0.2-dev -H"
 
 COPY [".", "/sploitctl"]
 
