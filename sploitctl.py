@@ -50,7 +50,7 @@ exploit_repo: dict = {}
 decompress_archive: bool = False
 remove_archive: bool = False
 max_trds: int = 4
-useragent_string: str = "Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0"
+useragent_string: str = f"{PROJECT}/{VERSION}"
 parallel_executer = None
 proxy_settings: dict = {}
 max_retry: int = 3
@@ -158,7 +158,7 @@ def sync_packetstorm_yearly(start: int, end: int, repo: list) -> None:
 
 def sync_packetstorm_monthly(start: int, end: int, year: int, repo: list) -> None:
     for i in range(start, end):
-        url = f"https://dl.packetstormsecurity.net/{str(year)[-2:]}{i:02d}-exploits/{str(year)[-2:]}{i:02d}-exploits.tgz"
+        url = f"https://dl.packetstormsecurity.net/{str(year)[-2:]}{i:02d}-exploits/{str(year)[-2:] if year < 2020 else str(year)}{i:02d}-exploits.tgz"
         if url in repo:
             continue
         if check_packetstorm(url):
@@ -272,42 +272,58 @@ def fetch_file_git(url: str, path: str) -> None:
 # fetch file from http
 def fetch_file_http(url: str, path: str) -> None:
     global proxy_settings
-    rq = requests.get(url, stream=True, headers={
-        'User-Agent': useragent_string}, proxies=proxy_settings)
-    fp = open(path, 'wb')
-    for data in rq.iter_content(chunk_size=CHUNK_SIZE):
-        fp.write(data)
-    fp.close()
+    global max_retry
+
+    partpath: str = f"{path}.part"
+    headers: dict = {'User-Agent': useragent_string}
+
+    if os.path.isfile(partpath):
+        size: int = os.stat(partpath).st_size
+        headers["Range"] = f'bytes={size}-'
+
+    for _ in range(max_retry):
+        rq: requests.Response = requests.get(
+            url, stream=True, headers=headers, proxies=proxy_settings)
+
+        if rq.status_code == 404:
+            raise FileNotFoundError("host returned 404")
+        elif rq.status_code not in [200, 206]:
+            time.sleep(5)
+            continue
+
+        mode: str = "ab" if rq.status_code == 206 else "wb"
+        with open(partpath, mode) as fp:
+            for data in rq.iter_content(chunk_size=CHUNK_SIZE):
+                fp.write(data)
+        os.rename(partpath, path)
+        break
 
 
 # fetch file wrapper
 def fetch_file(url: str, path: str) -> None:
     global decompress_archive
-    global max_retry
 
-    for _ in range(0, max_retry + 1):
-        try:
-            filename = os.path.basename(path)
-            check_dir(os.path.dirname(path))
+    try:
+        filename = os.path.basename(path)
+        check_dir(os.path.dirname(path))
 
-            if check_file(path):
-                warn(f"{filename} already exists -- skipping")
+        if check_file(path):
+            warn(f"{filename} already exists -- skipping")
+        else:
+            info(f"downloading {filename}")
+            if str(url).startswith('git+'):
+                fetch_file_git(url.replace("git+", ""), path)
             else:
-                info(f"downloading {filename}")
-                if str(url).startswith('git+'):
-                    fetch_file_git(url.replace("git+", ""), path)
-                else:
-                    fetch_file_http(url, path)
-            if decompress_archive and not str(url).startswith('git+'):
-                decompress(path)
-                if remove_archive:
-                    remove(path)
-            break
-        except KeyboardInterrupt:
-            pass
-        except Exception as ex:
-            err(f"Error while downloading {url}: {str(ex)}")
-            remove(path)
+                fetch_file_http(url, path)
+        if decompress_archive and not str(url).startswith('git+'):
+            decompress(path)
+            if remove_archive:
+                remove(path)
+    except KeyboardInterrupt:
+        pass
+    except Exception as ex:
+        err(f"Error while downloading {url}: {str(ex)}")
+        remove(path)
 
 
 # wrapper around fetch_file
