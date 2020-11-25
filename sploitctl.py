@@ -27,6 +27,7 @@ import re
 import tarfile
 import zipfile
 import json
+import csv
 from datetime import date
 from concurrent.futures import ThreadPoolExecutor
 
@@ -41,7 +42,7 @@ except Exception as ex:
 
 ORGANIZATION: str = "blackarch.org"
 LICENSE: str = "GPLv3"
-VERSION: str = "3.0.2"  # sploitctl.py version
+VERSION: str = "3.0.3"  # sploitctl.py version
 PROJECT: str = "sploitctl"
 
 exploit_path: str = "/usr/share/exploits"  # default exploit base directory
@@ -478,14 +479,36 @@ def print_sites(func: callable) -> None:
         exit(-1)
 
 
+def search_exploitdb(regex: str, dir: str) -> list:
+    exploits_list = [f"{dir}/files_exploits.csv",
+                     f"{dir}/files_shellcodes.csv"]
+    found = []
+
+    try:
+        for exploit in exploits_list:
+            fp = open(exploit)
+            next(fp)
+            for row in csv.reader(fp):
+                if re.match(regex, row[2], re.IGNORECASE):
+                    found.append(f"{dir}/{row[1]}")
+    except:
+        pass
+    return found
+
+
 # search exploits directory for regex match
 def search(regex: str) -> None:
     global exploit_path
     count = 0
     try:
-        for root, _, files in os.walk(exploit_path):
+        for root, dirs, files in os.walk(exploit_path, topdown=True):
+            if "exploitdb" in dirs:
+                for exploit in search_exploitdb(regex, os.path.join(root, "exploitdb")):
+                    info(f"exploit found: {exploit}")
+                    count += 1
+                dirs[:] = [d for d in dirs if d not in "exploitdb"]
             for f in files:
-                if re.match(regex, f):
+                if re.match(regex, f, re.IGNORECASE):
                     info(f"exploit found: {os.path.join(root, f)}")
                     count += 1
         if count == 0:
