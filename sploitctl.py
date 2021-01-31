@@ -79,7 +79,6 @@ def get_parser():
     group.add_argument(
         "-s",
         "--search",
-        action="store_true",
         help="search for the required exploit",
     )
     group.add_argument(
