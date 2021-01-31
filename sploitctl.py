@@ -74,20 +74,19 @@ def info(string: str) -> None:
 
 # usage and help
 def get_parser():
-    parser = argparse.ArgumentParser(description="Common User Passwords Profiler")
+    parser = argparse.ArgumentParser(description="SploitCTL")
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
         "-s",
         "--search",
         action="store_true",
-        help="Interactive questions for user password profiling",
+        help="Search for Exploits",
     )
     group.add_argument(
         "-f",
         "--fetch",
         type=int,
-        help="Use this option to improve existing dictionary,"
-        " or WyD.pl output to make some pwnsauce",
+        help="Fetch known exploits",
     )
     parser.add_argument(
         "-u",
