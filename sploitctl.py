@@ -71,71 +71,6 @@ def warn(string: str) -> None:
 def info(string: str) -> None:
     print(colored("[*]", "blue", attrs=["bold"]), string)
 
-
-# usage and help
-def get_parser():
-    parser = argparse.ArgumentParser(description="sploitctl")
-    group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument(
-        "-s",
-        "--search",
-        help="search for the required exploit",
-    )
-    group.add_argument(
-        "-f",
-        "--fetch",
-        type=int,
-        help="Exploit to fetch",
-    )
-    group.add_argument(
-        "-l",
-        "--list",
-        action="store_true",
-        help="print the list of all available sites"
-    )
-    group.add_argument(
-        "-U",
-        "--update",
-        type=int,
-        help="update available exploits"
-    )
-    parser.add_argument(
-        "-u",
-        "--useragent",
-        help="useragent to be used for the extraction"
-    )
-    parser.add_argument(
-        "-X",
-        "--decompress",
-        action="store_true",
-        help="decompress the file after extraction"
-    )
-    parser.add_argument(
-        "-P",
-        "--proxy",
-        help="Proxy to be used for the extraction"
-    )
-    parser.add_argument(
-        "-d",
-        "--directory",
-        help="base directory to store the exploits"
-    )
-    parser.add_argument(
-        "-t",
-        "--threads",
-        type=int,
-        help=f"Number of workers for download [default={max_trds}]"
-    )
-    parser.add_argument(
-        "-r",
-        "--retries",
-        type=int,
-        help=f"Number of retries if download fails [default={max_retry}]"
-    )
-
-    return parser
-
-
 # print version
 def version() -> None:
     global PROJECT
@@ -557,6 +492,69 @@ def save_repo() -> None:
         exit(-1)
 
 
+# usage and help
+def get_parser():
+    parser = argparse.ArgumentParser(description=banner())
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument(
+        "-s",
+        "--search",
+        help="search for the required exploit",
+    )
+    group.add_argument(
+        "-f",
+        "--fetch",
+        type=int,
+        help="Exploit to fetch",
+    )
+    group.add_argument(
+        "-l",
+        "--list",
+        action="store_true",
+        help="print the list of all available sites"
+    )
+    group.add_argument(
+        "-U",
+        "--update",
+        type=int,
+        help="update available exploits"
+    )
+    parser.add_argument(
+        "-u",
+        "--useragent",
+        help="useragent to be used for the extraction"
+    )
+    parser.add_argument(
+        "-X",
+        "--decompress",
+        action="store_true",
+        help="decompress the file after extraction"
+    )
+    parser.add_argument(
+        "-P",
+        "--proxy",
+        help="Proxy to be used for the extraction"
+    )
+    parser.add_argument(
+        "-d",
+        "--directory",
+        help="base directory to store the exploits"
+    )
+    parser.add_argument(
+        "-t",
+        "--threads",
+        type=int,
+        help=f"Number of workers for download [default={max_trds}]"
+    )
+    parser.add_argument(
+        "-r",
+        "--retries",
+        type=int,
+        help=f"Number of retries if download fails [default={max_retry}]"
+    )
+
+    return parser
+                    
 # controller and program flow
 def main():
     global parallel_executer
