@@ -564,8 +564,6 @@ def main():
     global max_retry 
     global decompress_archive
     global remove_archive
-    
-    banner()
 
     load_repo()
 
