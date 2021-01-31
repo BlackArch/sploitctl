@@ -74,19 +74,31 @@ def info(string: str) -> None:
 
 # usage and help
 def get_parser():
-    parser = argparse.ArgumentParser(description="SploitCTL")
+    parser = argparse.ArgumentParser(description="sploitctl")
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
         "-s",
         "--search",
         action="store_true",
-        help="Search for Exploits",
+        help="search for the required exploit",
     )
     group.add_argument(
         "-f",
         "--fetch",
         type=int,
-        help="Fetch known exploits",
+        help="Exploit to fetch",
+    )
+    group.add_argument(
+        "-l",
+        "--list",
+        action="store_true",
+        help="print the list of all available sites"
+    )
+    group.add_argument(
+        "-U",
+        "--update",
+        type=int,
+        help="update available exploits"
     )
     parser.add_argument(
         "-u",
@@ -547,7 +559,7 @@ def save_repo() -> None:
 
 
 # controller and program flow
-def main(argv: list) -> int:
+def main():
     global parallel_executer
     global max_trds
     global REPO_FILE
@@ -582,11 +594,16 @@ def main(argv: list) -> int:
             max_trds = args.threads
     if args.retries:
             max_retry = args.retries
+    
             
     if args.fetch:
         fetch(args.fetch)
     elif args.search:
         search(args.search)
+    elif args.list:
+        print_sites(fetch)
+    elif args.update:
+        update(args.update)
     else:
         parser.print_help()
 
@@ -595,4 +612,4 @@ def main(argv: list) -> int:
     save_repo()
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
