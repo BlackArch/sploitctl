@@ -22,7 +22,7 @@
 # load dependencies
 import sys
 import os
-import getopt
+import argparse
 import re
 import tarfile
 import zipfile
@@ -45,7 +45,7 @@ LICENSE: str = "GPLv3"
 VERSION: str = "3.0.3"  # sploitctl.py version
 PROJECT: str = "sploitctl"
 
-exploit_path: str = "/usr/share/exploits"  # default exploit base directory
+exploit_path: str = "D:\Projects"  # default exploit base directory
 exploit_repo: dict = {}
 
 decompress_archive: bool = False
@@ -70,59 +70,6 @@ def warn(string: str) -> None:
 
 def info(string: str) -> None:
     print(colored("[*]", "blue", attrs=["bold"]), string)
-
-
-# usage and help
-def usage() -> None:
-    global PROJECT
-    global exploit_path
-    global max_trds
-    global max_retry
-    str_usage = "usage:\n\n"
-    str_usage += f"  {PROJECT} -f <arg> [options] | -u <arg> [options] | -s <arg> [options] | <misc>\n\n"
-    str_usage += "options:\n\n"
-    str_usage += "  -f <num>   - download exploit archives from chosen sites\n"
-    str_usage += "             - ? to list sites\n"
-    str_usage += "  -u <num>   - update exploit archive from chosen installed archive\n"
-    str_usage += "             - ? to list downloaded archives\n"
-    str_usage += "  -d <dir>   - exploits base directory (default: /usr/share/exploits)\n"
-    str_usage += "  -s <regex> - exploits to search using <regex> in base directory\n"
-    str_usage += "  -t <num>   - max parallel downloads (default: 4)\n"
-    str_usage += "  -r <num>   - max retry failed downloads (default: 3)\n"
-    str_usage += "  -A <str>   - set useragent string\n"
-    str_usage += "  -P <str>   - set proxy (format: proto://user:pass@host:port)\n"
-    str_usage += "  -X         - decompress archive\n"
-    str_usage += "  -R         - remove archive after decompression\n\n"
-    str_usage += "misc:\n\n"
-    str_usage += f"  -V         - print version of {PROJECT} and exit\n"
-    str_usage += "  -H         - print this help and exit\n\n"
-    str_usage += "example:\n\n"
-    str_usage += "  # download and decompress all exploit archives and remove archive\n"
-    str_usage += f"  $ {PROJECT} -f 0 -XR\n\n"
-    str_usage += "  # download all exploits in packetstorm archive\n"
-    str_usage += f"  $ {PROJECT} -f 4\n\n"
-    str_usage += "  # list all available exploit archives\n"
-    str_usage += f"  $ {PROJECT} -f ?\n\n"
-    str_usage += "  # download and decompress all exploits in m00-exploits archive\n"
-    str_usage += f"  $ {PROJECT} -f 2 -XR\n\n"
-    str_usage += "  # download all exploits archives using 20 threads and 4 retries\n"
-    str_usage += f"  $ {PROJECT} -r 4 -f 0 -t 20\n\n"
-    str_usage += "  # download lsd-pl-exploits to \"~/exploits\" directory\n"
-    str_usage += f"  $ {PROJECT} -f 3 -d ~/exploits\n\n"
-    str_usage += "  # download all exploits with using tor socks5 proxy\n"
-    str_usage += f"  $ {PROJECT} -f 0 -P \"socks5://127.0.0.1:9050\"\n\n"
-    str_usage += "  # download all exploits with using http proxy and noleak useragent\n"
-    str_usage += f"  $ {PROJECT} -f 0 -P \"http://127.0.0.1:9060\" -A \"noleak\"\n\n"
-    str_usage += "  # list all installed exploits available for download\n"
-    str_usage += f"  $ {PROJECT} -u ?\n\n"
-    str_usage += "  # update all installed exploits with using http proxy and noleak useragent\n"
-    str_usage += f"  $ {PROJECT} -u 0 -P \"http://127.0.0.1:9060\" -A \"noleak\" -XR\n\n"
-    str_usage += "notes:\n\n"
-    str_usage += f"  * {PROJECT} update's id are relative to the installed archives\n"
-    str_usage += "    and are not static, so by installing an exploit archive it will\n"
-    str_usage += "    show up in the update section so always do a -u ? before updating.\n"
-
-    print(str_usage)
 
 
 # print version
@@ -545,123 +492,128 @@ def save_repo() -> None:
         err(f"Error while saving Repo: {str(ex)}")
         exit(-1)
 
+# usage and help
+def get_parser():
+    parser = argparse.ArgumentParser(description=banner())
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument(
+        "-s",
+        "--search",
+        help="exploits to search using <regex> in base directory",
+    )
+    group.add_argument(
+        "-f",
+        "--fetch",
+        type=int,
+        help="download exploit archives from chosen sites",
+    )
+    group.add_argument(
+        "-l",
+        "--list",
+        action="store_true",
+        help="print the list of all available sites for fetching"
+    )
+    group.add_argument(
+        "-ul",
+        "--update-list",
+        action="store_true",
+        help="print the list of all available sites for updating"
+    )
+    group.add_argument(
+        "-u",
+        "--update",
+        type=int,
+        help="update available exploits"
+    )
+    parser.add_argument(
+        "-A",
+        "--useragent",
+        help="useragent to be used for the extraction"
+    )
+    parser.add_argument(
+        "-X",
+        "--decompress",
+        action="store_true",
+        help="decompress the file after extraction"
+    )
+    parser.add_argument(
+        "-P",
+        "--proxy",
+        help="Proxy to be used for the extraction"
+    )
+    parser.add_argument(
+        "-d",
+        "--directory",
+        help="base directory to store the exploits"
+    )
+    parser.add_argument(
+        "-t",
+        "--threads",
+        type=int,
+        help=f"Number of workers for download [default={max_trds}]"
+    )
+    parser.add_argument(
+        "-r",
+        "--retries",
+        type=int,
+        help=f"Number of retries if download fails [default={max_retry}]"
+    )
+    
 
-def parse_args(argv: list) -> tuple:
-    global exploit_path
-    global decompress_archive
-    global remove_archive
-    global max_trds
-    global useragent_string
-    global proxy_settings
-    global max_retry
-    function = None
-    arguments = None
-    opFlag = 0
-
-    try:
-        opts, _ = getopt.getopt(argv[1:], "f:u:s:d:t:r:A:P:VHXDR")
-
-        if opts.__len__() <= 0:
-            function = usage
-            return function, None
-
-        for opt, arg in opts:
-            if opFlag and re.fullmatch(r"^-([fsu])", opt):
-                raise getopt.GetoptError("multiple operations selected")
-            if opt == '-f':
-                if arg == '?':
-                    function = print_sites
-                    arguments = fetch
-                else:
-                    function = fetch
-                    arguments = check_int(arg)
-                opFlag += 1
-            elif opt == '-u':
-                if arg == '?':
-                    function = print_sites
-                    arguments = update
-                else:
-                    function = update
-                    arguments = check_int(arg)
-                opFlag += 1
-            elif opt == '-s':
-                function = search
-                arguments = arg
-                opFlag += 1
-            elif opt == '-d':
-                dirname = os.path.abspath(arg)
-                check_dir(dirname)
-                exploit_path = dirname
-            elif opt == '-t':
-                max_trds = check_int(arg)
-                if max_trds <= 0:
-                    raise Exception("threads number can't be less than 1")
-            elif opt == '-r':
-                max_retry = check_int(arg)
-                if max_retry < 0:
-                    raise Exception("retry number can't be less than 0")
-            elif opt == '-A':
-                useragent_string = arg
-            elif opt == '-P':
-                if arg.startswith('http://'):
-                    proxy_settings = {"http": arg}
-                else:
-                    proxy_settings = {"http": arg, "https": arg}
-                check_proxy(proxy_settings)
-            elif opt == '-X':
-                decompress_archive = True
-            elif opt == '-R':
-                remove_archive = True
-            elif opt == '-V':
-                version()
-                exit(0)
-            elif opt == '-H':
-                usage()
-                exit(0)
-    except getopt.GetoptError as ex:
-        err(f"Error while parsing arguments: {str(ex)}")
-        warn("-H for help and usage")
-        exit(-1)
-    except Exception as ex:
-        err(f"Error while parsing arguments: {str(ex)}")
-        err("WTF?! mount /dev/brain")
-        exit(-1)
-    return function, arguments
-
+    return parser
 
 # controller and program flow
-def main(argv: list) -> int:
+def main():
     global parallel_executer
     global max_trds
     global REPO_FILE
     global exploit_path
-    banner()
+    global max_retry 
+    global decompress_archive
+    global remove_archive
 
     load_repo()
 
-    function, arguments = parse_args(argv)
+    parser = get_parser()
+    args = parser.parse_args()
 
     parallel_executer = ThreadPoolExecutor(max_trds)
-
-    if function == None:
-        err("no operation selected")
-        err("WTF?! mount /dev/brain")
-        return -1
-
-    if function in (fetch, update):
-        check_dir(exploit_path)
-
-    if arguments == None:
-        function()
+    if args.decompress:
+            decompress_archive = True
+            remove_archive = True
+    if args.useragent:
+            useragent_string = args.useragent
+    if args.proxy:
+            if args.proxy.startswith('http://'):
+                proxy_settings = {"http": args.proxy}
+            else:
+                proxy_settings = {"http": args.proxy, "https": args.proxy}
+    if args.directory:
+            dirname = os.path.abspath(args.directory)
+            check_dir(dirname)
+            exploit_path = dirname
+    if args.threads:
+            max_trds = args.threads
+    if args.retries:
+            max_retry = args.retries
+    
+            
+    if args.fetch:
+        fetch(args.fetch)
+    elif args.search:
+        search(args.search)
+    elif args.list:
+        print_sites(fetch)
+    elif args.update_list:
+        print_sites(update)
+    elif args.update:
+        update(args.update)
     else:
-        function(arguments)
+        parser.print_help()
 
     parallel_executer.shutdown()
 
     save_repo()
 
-    return 0
-
-
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    main()
