@@ -34,9 +34,8 @@ from concurrent.futures import ThreadPoolExecutor
 try:
     import requests
     import pygit2
-    from termcolor import colored
 except Exception as ex:
-    print(f"Error while loading dependencies: {str(ex)}", file=sys.stderr)
+    print("\u001b[31m\u001b[1m[-] \u001b[0mError while loading dependencies: " + str(ex), file=sys.stderr)
     exit(-1)
 
 
@@ -60,16 +59,25 @@ CHUNK_SIZE: int = 1024
 REPO_FILE: str = f"{os.path.dirname(os.path.realpath(__file__))}/repo.json"
 
 
+# CLI formatting codes
+class c:
+    RED = '\u001b[31m'
+    YELLOW = '\u001b[33m'
+    BLUE = '\u001b[34m'
+    RESET = '\u001b[0m'
+    BOLD = '\u001b[1m'
+
+
 def err(string: str) -> None:
-    print(colored("[-]", "red", attrs=["bold"]), string, file=sys.stderr)
+    print(c.BOLD + c.RED + "[-]", c.RESET + string, file=sys.stderr)
 
 
 def warn(string: str) -> None:
-    print(colored("[!]", "yellow", attrs=["bold"]), string)
+    print(c.BOLD + c.YELLOW + "[!]", c.RESET + string)
 
 
 def info(string: str) -> None:
-    print(colored("[*]", "blue", attrs=["bold"]), string)
+    print(c.BOLD + c.BLUE + "[*]", c.RESET + string)
 
 
 # usage and help
@@ -78,66 +86,67 @@ def usage() -> None:
     global exploit_path
     global max_trds
     global max_retry
-    str_usage = "usage:\n\n"
-    str_usage += f"  {PROJECT} -f <arg> [options] | -u <arg> [options] | -s <arg> [options] | <misc>\n\n"
-    str_usage += "options:\n\n"
-    str_usage += "  -f <num>   - download exploit archives from chosen sites\n"
-    str_usage += "             - ? to list sites\n"
-    str_usage += "  -u <num>   - update exploit archive from chosen installed archive\n"
-    str_usage += "             - ? to list downloaded archives\n"
-    str_usage += "  -d <dir>   - exploits base directory (default: /usr/share/exploits)\n"
-    str_usage += "  -s <regex> - exploits to search using <regex> in base directory\n"
-    str_usage += "  -t <num>   - max parallel downloads (default: 4)\n"
-    str_usage += "  -r <num>   - max retry failed downloads (default: 3)\n"
-    str_usage += "  -A <str>   - set useragent string\n"
-    str_usage += "  -P <str>   - set proxy (format: proto://user:pass@host:port)\n"
-    str_usage += "  -X         - decompress archive\n"
-    str_usage += "  -R         - remove archive after decompression\n\n"
-    str_usage += "misc:\n\n"
-    str_usage += f"  -V         - print version of {PROJECT} and exit\n"
-    str_usage += "  -H         - print this help and exit\n\n"
-    str_usage += "example:\n\n"
-    str_usage += "  # download and decompress all exploit archives and remove archive\n"
-    str_usage += f"  $ {PROJECT} -f 0 -XR\n\n"
-    str_usage += "  # download all exploits in packetstorm archive\n"
-    str_usage += f"  $ {PROJECT} -f 4\n\n"
-    str_usage += "  # list all available exploit archives\n"
-    str_usage += f"  $ {PROJECT} -f ?\n\n"
-    str_usage += "  # download and decompress all exploits in m00-exploits archive\n"
-    str_usage += f"  $ {PROJECT} -f 2 -XR\n\n"
-    str_usage += "  # download all exploits archives using 20 threads and 4 retries\n"
-    str_usage += f"  $ {PROJECT} -r 4 -f 0 -t 20\n\n"
-    str_usage += "  # download lsd-pl-exploits to \"~/exploits\" directory\n"
-    str_usage += f"  $ {PROJECT} -f 3 -d ~/exploits\n\n"
-    str_usage += "  # download all exploits with using tor socks5 proxy\n"
-    str_usage += f"  $ {PROJECT} -f 0 -P \"socks5://127.0.0.1:9050\"\n\n"
-    str_usage += "  # download all exploits with using http proxy and noleak useragent\n"
-    str_usage += f"  $ {PROJECT} -f 0 -P \"http://127.0.0.1:9060\" -A \"noleak\"\n\n"
-    str_usage += "  # list all installed exploits available for download\n"
-    str_usage += f"  $ {PROJECT} -u ?\n\n"
-    str_usage += "  # update all installed exploits with using http proxy and noleak useragent\n"
-    str_usage += f"  $ {PROJECT} -u 0 -P \"http://127.0.0.1:9060\" -A \"noleak\" -XR\n\n"
-    str_usage += "notes:\n\n"
-    str_usage += f"  * {PROJECT} update's id are relative to the installed archives\n"
-    str_usage += "    and are not static, so by installing an exploit archive it will\n"
-    str_usage += "    show up in the update section so always do a -u ? before updating.\n"
-
-    print(str_usage)
+    str_usage = [
+        "",
+        "usage:\n\n",
+        "  " + PROJECT + " -f <arg> [options] | -u <arg> [options] | -s <arg> [options] | <misc>\n\n"
+        "options:\n\n",
+        "  -f <num>   - download exploit archives from chosen sites\n",
+        "             - ? to list sites\n",
+        "  -u <num>   - update exploit archive from chosen installed archive\n",
+        "             - ? to list downloaded archives\n",
+        "  -d <dir>   - exploits base directory (default: " + exploit_path + ")\n",
+        "  -s <regex> - exploits to search using <regex> in base directory\n",
+        "  -t <num>   - max parallel downloads (default: " + str(max_trds) + ")\n",
+        "  -r <num>   - max retry failed downloads (default: " + str(max_retry) + ")\n",
+        "  -A <str>   - set useragent string\n",
+        "  -P <str>   - set proxy (format: proto://user:pass@host:port)\n",
+        "  -X         - decompress archive\n",
+        "  -R         - remove archive after decompression\n\n",
+        "misc:\n\n",
+        "  -V         - print version of " + PROJECT + " and exit\n",
+        "  -H         - print this help and exit\n\n",
+        "example:\n\n",
+        "  # download and decompress all exploit archives and remove archive\n",
+        "  $ " + PROJECT + " -f 0 -XR\n\n",
+        "  # download all exploits in packetstorm archive\n",
+        "  $ " + PROJECT + " -f 4\n\n",
+        "  # list all available exploit archives\n",
+        "  $ " + PROJECT + " -f ?\n\n",
+        "  # download and decompress all exploits in m00-exploits archive\n",
+        "  $ " + PROJECT + " -f 2 -XR\n\n",
+        "  # download all exploits archives using 20 threads and 4 retries\n",
+        "  $ " + PROJECT + " -r 4 -f 0 -t 20\n\n",
+        "  # download lsd-pl-exploits to \"~/exploits\" directory\n",
+        "  $ " + PROJECT + " -f 3 -d ~/exploits\n\n",
+        "  # download all exploits with using tor socks5 proxy\n",
+        "  $ " + PROJECT + " -f 0 -P \"socks5://127.0.0.1:9050\"\n\n",
+        "  # download all exploits with using http proxy and noleak useragent\n",
+        "  $ " + PROJECT + " -f 0 -P \"http://127.0.0.1:9060\" -A \"noleak\"\n\n",
+        "  # list all installed exploits available for download\n",
+        "  $ " + PROJECT + " -u ?\n\n",
+        "  # update all installed exploits with using http proxy and noleak useragent\n",
+        "  $ " + PROJECT + " -u 0 -P \"http://127.0.0.1:9060\" -A \"noleak\" -XR\n\n",
+        "notes:\n\n",
+        "  * " + PROJECT + " update's id are relative to the installed archives\n",
+        "    and are not static, so by installing an exploit archive it will\n",
+        "    show up in the update section so always do a -u ? before updating.\n"]
+    print(c.RESET.join(str_usage))
 
 
 # print version
 def version() -> None:
     global PROJECT
     global VERSION
-    print(f"{PROJECT} v{ VERSION}")
+    print(PROJECT + " v" + VERSION)
 
 
 # leet banner, very important
 def banner() -> None:
     global PROJECT
     global ORGANIZATION
-    str_banner = f"--==[ {PROJECT} by {ORGANIZATION} ]==--\n"
-    print(colored(str_banner, "red", attrs=["bold"]))
+    str_banner = "--==[ " + PROJECT + " by " + ORGANIZATION + " ]==--\n"
+    print(c.BOLD + c.RED + str_banner + c.RESET)
 
 
 def check_packetstorm(url: str) -> bool:
