@@ -45,7 +45,7 @@ LICENSE: str = "GPLv3"
 VERSION: str = "3.0.3"  # sploitctl.py version
 PROJECT: str = "sploitctl"
 
-exploit_path: str = "/usr/share/exploits"  # default exploit base directory
+exploit_path: str = os.getenv('SPLOIT_DIR') if os.getenv('SPLOIT_DIR') else "/usr/share/exploits"  # default exploit base directory
 exploit_repo: dict = {}
 
 decompress_archive: bool = False
